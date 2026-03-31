@@ -51,18 +51,18 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="max-w-[600px] mx-auto fade-in">
+    <div className="max-w-[600px] mx-auto fade-in pb-8">
       <h1 className="text-xl font-semibold mb-8">Settings</h1>
 
       {/* Appearance */}
-      <section className="glass p-6 mb-5">
-        <div className="flex items-center gap-2 mb-5">
+      <section className="glass p-7 mb-8">
+        <div className="flex items-center gap-2 mb-6">
           <Palette size={16} className="text-[var(--text-2)]" />
           <h2 className="font-medium text-[15px]">Appearance</h2>
         </div>
 
         {/* Background */}
-        <div className="mb-5">
+        <div className="mb-6">
           <label className="text-[13px] text-[var(--text-2)] mb-3 block">Background Theme</label>
           <div className="grid grid-cols-3 gap-3">
             {bgPresets.map((preset, i) => (
@@ -107,43 +107,45 @@ export function SettingsPage() {
       </section>
 
       {/* Background Effects */}
-      <section className="glass p-6 mb-5">
-        <div className="flex items-center gap-2 mb-5">
+      <section className="glass p-7 mb-8">
+        <div className="flex items-center gap-2 mb-6">
           <Sparkles size={16} className="text-[var(--text-2)]" />
           <h2 className="font-medium text-[15px]">Background Effects</h2>
         </div>
 
-        <label className="flex items-center justify-between py-2.5 cursor-pointer">
-          <span className="text-[14px]">Animated orbs</span>
-          <input
-            type="checkbox"
-            defaultChecked={true}
-            onChange={(e) => {
-              const orbs = document.querySelector('.bg-orbs') as HTMLElement
-              if (orbs) orbs.style.display = e.target.checked ? '' : 'none'
-            }}
-            className="accent-white w-4 h-4"
-          />
-        </label>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center justify-between py-3 cursor-pointer">
+            <span className="text-[14px]">Animated orbs</span>
+            <input
+              type="checkbox"
+              defaultChecked={true}
+              onChange={(e) => {
+                const orbs = document.querySelector('.bg-orbs') as HTMLElement
+                if (orbs) orbs.style.display = e.target.checked ? '' : 'none'
+              }}
+              className="accent-white w-4 h-4"
+            />
+          </label>
 
-        <label className="flex items-center justify-between py-2.5 cursor-pointer">
-          <span className="text-[14px]">Glass blur effects</span>
-          <input
-            type="checkbox"
-            defaultChecked={true}
-            onChange={(e) => {
-              document.documentElement.style.setProperty(
-                '--glass-blur', e.target.checked ? '24px' : '0px'
-              )
-            }}
-            className="accent-white w-4 h-4"
-          />
-        </label>
+          <label className="flex items-center justify-between py-3 cursor-pointer">
+            <span className="text-[14px]">Glass blur effects</span>
+            <input
+              type="checkbox"
+              defaultChecked={true}
+              onChange={(e) => {
+                document.documentElement.style.setProperty(
+                  '--glass-blur', e.target.checked ? '24px' : '0px'
+                )
+              }}
+              className="accent-white w-4 h-4"
+            />
+          </label>
+        </div>
       </section>
 
       {/* Java */}
-      <section className="glass p-6 mb-5">
-        <div className="flex items-center justify-between mb-5">
+      <section className="glass p-7 mb-8">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="font-medium text-[15px]">Java Installations</h2>
           <button className="glass-btn text-[13px] py-2" onClick={detectJava} disabled={isLoading}>
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
@@ -155,11 +157,11 @@ export function SettingsPage() {
             <p className="text-[13px] text-[var(--text-3)]">No Java installations found</p>
           ) : (
             detectedJava.map(([path, version], i) => (
-              <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-white/[0.025]">
+              <div key={i} className="flex items-center gap-4 p-3.5 rounded-lg bg-white/[0.025]">
                 <HardDrive size={14} className="text-[var(--text-3)] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-mono truncate">{path}</p>
-                  <p className="text-[11px] text-[var(--text-3)] mt-0.5">Java {version}</p>
+                  <p className="text-[11px] text-[var(--text-3)] mt-1">Java {version}</p>
                 </div>
               </div>
             ))
@@ -168,11 +170,11 @@ export function SettingsPage() {
       </section>
 
       {/* Performance */}
-      <section className="glass p-6 mb-5">
-        <h2 className="font-medium text-[15px] mb-5">Performance</h2>
+      <section className="glass p-7 mb-8">
+        <h2 className="font-medium text-[15px] mb-6">Performance</h2>
 
-        <div className="mb-5">
-          <label className="text-[13px] text-[var(--text-2)] mb-2 block">
+        <div className="mb-6">
+          <label className="text-[13px] text-[var(--text-2)] mb-2.5 block">
             Default Memory: {settings.default_memory_mb}MB
           </label>
           <input
@@ -187,7 +189,7 @@ export function SettingsPage() {
         </div>
 
         <div>
-          <label className="text-[13px] text-[var(--text-2)] mb-2 block">
+          <label className="text-[13px] text-[var(--text-2)] mb-2.5 block">
             Download Threads: {settings.download_threads}
           </label>
           <input
@@ -203,28 +205,30 @@ export function SettingsPage() {
       </section>
 
       {/* Behavior */}
-      <section className="glass p-6">
-        <h2 className="font-medium text-[15px] mb-5">Behavior</h2>
+      <section className="glass p-7">
+        <h2 className="font-medium text-[15px] mb-6">Behavior</h2>
 
-        <label className="flex items-center justify-between py-2.5 cursor-pointer">
-          <span className="text-[14px]">Close launcher on game start</span>
-          <input
-            type="checkbox"
-            checked={settings.close_on_launch}
-            onChange={e => update({ close_on_launch: e.target.checked })}
-            className="accent-white w-4 h-4"
-          />
-        </label>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center justify-between py-3 cursor-pointer">
+            <span className="text-[14px]">Close launcher on game start</span>
+            <input
+              type="checkbox"
+              checked={settings.close_on_launch}
+              onChange={e => update({ close_on_launch: e.target.checked })}
+              className="accent-white w-4 h-4"
+            />
+          </label>
 
-        <label className="flex items-center justify-between py-2.5 cursor-pointer">
-          <span className="text-[14px]">Show game console</span>
-          <input
-            type="checkbox"
-            checked={settings.show_console}
-            onChange={e => update({ show_console: e.target.checked })}
-            className="accent-white w-4 h-4"
-          />
-        </label>
+          <label className="flex items-center justify-between py-3 cursor-pointer">
+            <span className="text-[14px]">Show game console</span>
+            <input
+              type="checkbox"
+              checked={settings.show_console}
+              onChange={e => update({ show_console: e.target.checked })}
+              className="accent-white w-4 h-4"
+            />
+          </label>
+        </div>
       </section>
     </div>
   )

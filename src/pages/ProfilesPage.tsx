@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { Plus, Trash2, Edit, Clock, Gamepad2, Image } from 'lucide-react'
 import { useProfileStore, type Profile, type LoaderType } from '../stores/profileStore'
 import { useDraggable } from '../lib/useDraggable'
-import { ModSearch } from '../components/profiles/ModSearch'
+import { ResourceSearch, type ResourceEntry } from '../components/profiles/ResourceSearch'
 
 export function ProfilesPage() {
   const { profiles, selectedProfileId, versions, fabricVersions, loadProfiles, createProfile, updateProfile, deleteProfile, selectProfile, fetchVersions, fetchFabricVersions } = useProfileStore()
   const [editing, setEditing] = useState<Profile | null>(null)
   const [showEditor, setShowEditor] = useState(false)
+  const [resources, setResources] = useState<ResourceEntry[]>([])
   const drag = useDraggable()
 
   useEffect(() => {
@@ -34,11 +35,13 @@ export function ProfilesPage() {
       total_playtime: 0,
       created: '',
     })
+    setResources([])
     setShowEditor(true)
   }
 
   const openEditProfile = (profile: Profile) => {
     setEditing({ ...profile })
+    setResources([])
     setShowEditor(true)
     if (profile.loader_type === 'fabric') {
       fetchFabricVersions(profile.mc_version)
@@ -288,10 +291,13 @@ export function ProfilesPage() {
                 </div>
               </div>
 
-              {/* Mod Search */}
-              {editing.loader_type !== 'vanilla' && (
-                <ModSearch mcVersion={editing.mc_version} loaderType={editing.loader_type} />
-              )}
+              {/* Resources (Mods, Textures, Shaders) */}
+              <ResourceSearch
+                mcVersion={editing.mc_version}
+                loaderType={editing.loader_type}
+                resources={resources}
+                onResourcesChange={setResources}
+              />
 
               {/* Save/Cancel */}
               <div className="flex gap-3 mt-3">
