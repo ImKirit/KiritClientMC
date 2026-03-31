@@ -1,56 +1,66 @@
-import { Upload, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { Upload, Shield } from 'lucide-react'
 
 export function CosmeticsPage() {
+  const [dragOver, setDragOver] = useState(false)
+
   return (
     <div className="max-w-[600px] mx-auto fade-in">
-      <h1 className="text-xl font-semibold mb-6">Cosmetics</h1>
+      <h1 className="text-xl font-semibold mb-8">Cosmetics</h1>
 
-      <div className="glass p-8 text-center">
-        <Sparkles size={40} className="mx-auto mb-4 text-[var(--text-3)]" strokeWidth={1.5} />
-        <h2 className="font-medium text-[16px] mb-2">Coming Soon</h2>
-        <p className="text-[14px] text-[var(--text-2)] mb-1">
-          Custom Capes, Name Effects, Creator Codes
-        </p>
-        <p className="text-[13px] text-[var(--text-3)]">
-          Cosmetics will be visible to all KiritClient users
-        </p>
-      </div>
-
-      {/* Cape Preview Placeholder */}
-      <div className="glass p-5 mt-4">
-        <h3 className="font-medium text-[14px] mb-3">Cape Upload</h3>
-        <div className="border-2 border-dashed border-white/[0.08] rounded-xl p-8 text-center cursor-pointer hover:border-white/[0.15] transition-colors">
-          <Upload size={24} className="mx-auto mb-2 text-[var(--text-3)]" />
-          <p className="text-[13px] text-[var(--text-3)]">
+      {/* Cape Upload */}
+      <section className="glass p-6 mb-5">
+        <h3 className="font-medium text-[15px] mb-4">Your Cape</h3>
+        <div
+          className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
+            dragOver
+              ? 'border-white/[0.25] bg-white/[0.04]'
+              : 'border-white/[0.08] hover:border-white/[0.16]'
+          }`}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => { e.preventDefault(); setDragOver(false) }}
+        >
+          <Upload size={28} className="mx-auto mb-3 text-[var(--text-3)]" />
+          <p className="text-[14px] text-[var(--text-2)] mb-1">
             Drop a 64x32 PNG here or click to upload
           </p>
+          <p className="text-[12px] text-[var(--text-3)]">
+            Your cape will be visible to all KiritClient users
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* Cosmetics Grid Placeholder */}
-      <div className="glass p-5 mt-4">
-        <h3 className="font-medium text-[14px] mb-3">Name Effects</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {['Glow', 'Rainbow', 'Pulse', 'Fade', 'Gradient', 'Neon'].map(effect => (
-            <button key={effect} className="glass-btn text-[13px] py-3 opacity-40 cursor-not-allowed">
-              {effect}
-            </button>
-          ))}
+      {/* Cape Preview */}
+      <section className="glass p-6 mb-5">
+        <h3 className="font-medium text-[15px] mb-4">Cape Preview</h3>
+        <div className="flex items-center justify-center py-8">
+          <div className="w-[128px] h-[64px] rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+            <p className="text-[12px] text-[var(--text-3)]">No cape</p>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Creator Code Placeholder */}
-      <div className="glass p-5 mt-4">
-        <h3 className="font-medium text-[14px] mb-3">Creator Code</h3>
-        <div className="flex gap-2">
+      {/* Creator Code */}
+      <section className="glass p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="font-medium text-[15px]">Creator Code</h3>
+          <Shield size={14} className="text-[var(--text-3)]" />
+        </div>
+        <p className="text-[13px] text-[var(--text-2)] mb-4">
+          Enter a creator code to support your favorite content creator.
+        </p>
+        <div className="flex gap-3">
           <input
             className="glass-input"
-            placeholder="Enter creator code..."
-            disabled
+            placeholder="Enter code..."
           />
-          <button className="glass-btn opacity-40 cursor-not-allowed">Apply</button>
+          <button className="glass-btn glass-btn-primary whitespace-nowrap">Apply</button>
         </div>
-      </div>
+        <p className="text-[11px] text-[var(--text-3)] mt-3">
+          Only selected creators can generate codes.
+        </p>
+      </section>
     </div>
   )
 }
