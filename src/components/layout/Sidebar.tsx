@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Users, FolderOpen, Settings, Sparkles } from 'lucide-react'
+import { Home, Users, FolderOpen, Settings, Sparkles, Shirt } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 
 const links = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/accounts', icon: Users, label: 'Accounts' },
   { to: '/profiles', icon: FolderOpen, label: 'Profiles' },
+  { to: '/skins', icon: Shirt, label: 'Skins' },
   { to: '/cosmetics', icon: Sparkles, label: 'Cosmetics' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]

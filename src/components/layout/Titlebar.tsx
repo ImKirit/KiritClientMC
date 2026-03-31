@@ -25,9 +25,9 @@ export function Titlebar() {
         KIRITCLIENT
       </span>
       <div className="titlebar-controls">
+        <button className="titlebar-btn close" onClick={close} />
         <button className="titlebar-btn minimize" onClick={minimize} />
         <button className="titlebar-btn maximize" onClick={maximize} />
-        <button className="titlebar-btn close" onClick={close} />
       </div>
     </div>
   )
