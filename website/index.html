@@ -3,135 +3,172 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KiritClient - Minecraft Launcher</title>
+  <title>KiritClient — Minecraft Launcher</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Particle Background -->
   <canvas id="particles"></canvas>
 
-  <!-- Content -->
-  <div class="container">
-    <!-- Nav -->
-    <nav class="nav">
-      <div class="nav-brand">KIRITCLIENT</div>
+  <!-- Navigation -->
+  <header class="nav">
+    <div class="nav-inner">
+      <a href="/mcclient" class="nav-logo">
+        <img src="logo.svg" alt="KiritClient" class="nav-logo-img">
+        <span class="nav-logo-text">KIRITCLIENT</span>
+      </a>
       <div class="nav-links">
         <a href="https://github.com/ImKirit/KiritClientMC" target="_blank" class="nav-link">GitHub</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#download" class="nav-btn">Download</a>
       </div>
-    </nav>
+    </div>
+  </header>
 
-    <!-- Hero -->
-    <section class="hero">
-      <div class="hero-badge">Minecraft Launcher</div>
-      <h1 class="hero-title">
-        Kirit<span class="hero-accent">Client</span>
-      </h1>
-      <p class="hero-subtitle">
-        A sleek, lightweight Minecraft launcher with multi-account support,
-        mod management, custom capes, and a modern glass UI.
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <img src="logo.svg" alt="" class="hero-logo">
+      <h1 class="hero-title">KIRIT<span class="hero-title-light">CLIENT</span></h1>
+      <p class="hero-tagline">The free all-in-one Minecraft launcher</p>
+      <p class="hero-desc">
+        Multi-account login, mod management, custom capes, texture packs &amp; shaders
+        — wrapped in a sleek glass interface.
       </p>
-
       <div class="hero-actions">
-        <a href="/mcclient/KiritClient_0.1.0_x64-setup.exe" download class="btn btn-primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
+        <a href="/mcclient/KiritClient_0.1.0_x64-setup.exe" download class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download for Windows
         </a>
-        <a href="https://github.com/ImKirit/KiritClientMC" target="_blank" class="btn btn-secondary">
-          View Source
+        <a href="https://github.com/ImKirit/KiritClientMC" target="_blank" class="btn-ghost">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          Source Code
         </a>
       </div>
+      <p class="hero-meta">Windows 10/11 &middot; 4.5 MB &middot; Open Source</p>
+    </div>
+  </section>
 
-      <p class="hero-note">Windows 10/11 &middot; 4.5MB Installer &middot; Free &amp; Open Source</p>
-    </section>
-
-    <!-- Features -->
-    <section class="features">
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
+  <!-- Features -->
+  <section class="features" id="features">
+    <div class="section-inner">
+      <h2 class="section-title">Features</h2>
+      <p class="section-desc">Everything you need in a Minecraft launcher, nothing you don't.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>Multi-Account</h3>
+          <p>Switch between multiple Microsoft accounts with secure OAuth2 token management.</p>
         </div>
-        <h3>Multi-Account</h3>
-        <p>Switch between multiple Microsoft accounts seamlessly with secure token storage.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-            <polyline points="7.5 4.21 12 6.81 16.5 4.21"/>
-            <polyline points="7.5 19.79 7.5 14.6 3 12"/>
-            <polyline points="21 12 16.5 14.6 16.5 19.79"/>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-            <line x1="12" y1="22.08" x2="12" y2="12"/>
-          </svg>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </div>
+          <h3>Mod Loaders</h3>
+          <p>Fabric, Forge, NeoForge &amp; Quilt with built-in Modrinth search for mods, textures &amp; shaders.</p>
         </div>
-        <h3>Mod Loaders</h3>
-        <p>Fabric, Forge, NeoForge, and Quilt support with built-in Modrinth mod search.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect width="18" height="18" x="3" y="3" rx="2"/>
-            <path d="M3 9h18"/>
-            <path d="M9 21V9"/>
-          </svg>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+          </div>
+          <h3>Profiles</h3>
+          <p>Unlimited profiles with different versions, loaders, mods, resource packs and memory settings.</p>
         </div>
-        <h3>Profiles</h3>
-        <p>Create unlimited profiles with different versions, loaders, mods, texture packs, and shaders.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Capes &amp; Cosmetics</h3>
+          <p>Upload custom capes visible to all KiritClient users. Purchasable cosmetics coming soon.</p>
         </div>
-        <h3>Custom Capes</h3>
-        <p>Upload your own cape visible to all KiritClient users in-game.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <h3>Customizable</h3>
+          <p>Themes, accent colors and background effects — make the launcher yours.</p>
         </div>
-        <h3>Customizable</h3>
-        <p>Change background themes, accent colors, and toggle glass effects to make it yours.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-          </svg>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <h3>Lightweight</h3>
+          <p>Built with Tauri 2 — only 4.5 MB installer. No Chromium, no bloat, just performance.</p>
         </div>
-        <h3>Lightweight</h3>
-        <p>Built with Tauri 2 — only ~6MB installer. No bloated Electron, no Chromium bundled.</p>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <p>Made by <a href="https://imkirit.dev" target="_blank">ImKirit</a></p>
-      <p class="footer-sub">KiritClient is not affiliated with Mojang or Microsoft.</p>
-    </footer>
-  </div>
+  <!-- Download -->
+  <section class="download" id="download">
+    <div class="section-inner">
+      <h2 class="section-title">Download</h2>
+      <p class="section-desc">Get started in seconds.</p>
+      <div class="download-cards">
+        <div class="download-card download-card--active">
+          <div class="download-card-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+          </div>
+          <h3>Windows</h3>
+          <p class="download-card-info">Windows 10 and above</p>
+          <a href="/mcclient/KiritClient_0.1.0_x64-setup.exe" download class="btn-primary btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </a>
+          <span class="download-card-size">4.5 MB &middot; x64</span>
+        </div>
+        <div class="download-card">
+          <div class="download-card-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          </div>
+          <h3>macOS</h3>
+          <p class="download-card-info">Coming soon</p>
+          <button class="btn-ghost btn-sm" disabled>Not available yet</button>
+        </div>
+        <div class="download-card">
+          <div class="download-card-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.311.002-.465.014-.612.049-1.218.177-1.792.404-.875.347-1.651.876-2.27 1.559-.623.686-1.074 1.5-1.327 2.383-.124.436-.201.883-.23 1.337-.028.45-.007.904.064 1.349.144.905.47 1.774.953 2.555.481.779 1.108 1.46 1.846 2.007.369.273.765.508 1.182.696.417.188.854.328 1.302.411.45.084.908.11 1.363.078l.047-.003c.482-.029.958-.128 1.41-.294.447-.164.868-.392 1.249-.677.38-.283.72-.623 1.005-1.007.285-.384.514-.81.677-1.267.04-.11.073-.222.1-.335l.026-.112-.126-.052a15 15 0 0 1-.472-.192 12 12 0 0 1-1.094-.495 8 8 0 0 1-1.018-.616 7 7 0 0 1-.882-.765 6 6 0 0 1-.693-.895c-.203-.316-.373-.65-.507-.997a5 5 0 0 1-.289-1.075 5 5 0 0 1-.044-.574c-.003-.19.005-.38.024-.57s.049-.378.089-.564c.08-.373.2-.736.357-1.08.157-.345.35-.671.576-.972.225-.3.483-.573.766-.814.283-.241.592-.448.921-.613.33-.164.677-.286 1.034-.359a5 5 0 0 1 1.09-.073c.183.013.365.038.544.077l.093.02L14.573.19A5 5 0 0 0 13.5.025 9 9 0 0 0 12.504 0z"/></svg>
+          </div>
+          <h3>Linux</h3>
+          <p class="download-card-info">Coming soon</p>
+          <button class="btn-ghost btn-sm" disabled>Not available yet</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="footer-brand">
+            <img src="logo.svg" alt="" class="footer-logo">
+            <span>KIRITCLIENT</span>
+          </div>
+          <p class="footer-tagline">The free all-in-one Minecraft launcher.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="https://github.com/ImKirit/KiritClientMC" target="_blank">GitHub</a>
+          <a href="https://github.com/ImKirit/KiritClientMC/issues" target="_blank">Issues</a>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <a href="https://imkirit.dev">imkirit.dev</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; KiritClient 2026. All rights reserved.</p>
+        <p class="footer-disclaimer">Not affiliated with Minecraft or Mojang.</p>
+      </div>
+    </div>
+  </footer>
 
   <script src="particles.js"></script>
 </body>
