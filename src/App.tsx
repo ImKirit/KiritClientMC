@@ -10,6 +10,7 @@ import { SkinsPage } from './pages/SkinsPage'
 import { useAuthStore } from './stores/authStore'
 import { useProfileStore } from './stores/profileStore'
 import { useSettingsStore } from './stores/settingsStore'
+import { I18nProvider } from './lib/i18n'
 
 function App() {
   const loadAccounts = useAuthStore(s => s.loadAccounts)
@@ -23,18 +24,20 @@ function App() {
   }, [])
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/accounts" element={<AccountsPage />} />
-          <Route path="/profiles" element={<ProfilesPage />} />
-          <Route path="/skins" element={<SkinsPage />} />
-          <Route path="/cosmetics" element={<CosmeticsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <I18nProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/accounts" element={<AccountsPage />} />
+            <Route path="/profiles" element={<ProfilesPage />} />
+            <Route path="/skins" element={<SkinsPage />} />
+            <Route path="/cosmetics" element={<CosmeticsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </I18nProvider>
   )
 }
 

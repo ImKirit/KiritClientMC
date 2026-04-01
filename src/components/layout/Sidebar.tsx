@@ -1,18 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import { Home, Users, FolderOpen, Settings, Sparkles, Shirt } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
+import { useI18n } from '../../lib/i18n'
 
 const links = [
-  { to: '/', icon: Home, label: 'Home' },
-  { to: '/accounts', icon: Users, label: 'Accounts' },
-  { to: '/profiles', icon: FolderOpen, label: 'Profiles' },
-  { to: '/skins', icon: Shirt, label: 'Skins' },
-  { to: '/cosmetics', icon: Sparkles, label: 'Cosmetics' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/', icon: Home, i18nKey: 'nav.home' },
+  { to: '/accounts', icon: Users, i18nKey: 'nav.accounts' },
+  { to: '/profiles', icon: FolderOpen, i18nKey: 'nav.instances' },
+  { to: '/skins', icon: Shirt, i18nKey: 'nav.skins' },
+  { to: '/cosmetics', icon: Sparkles, i18nKey: 'nav.cosmetics' },
+  { to: '/settings', icon: Settings, i18nKey: 'nav.settings' },
 ]
 
 export function Sidebar() {
   const activeAccount = useAuthStore(s => s.getActiveAccount())
+  const { t } = useI18n()
 
   return (
     <aside className="glass-sidebar w-[var(--sidebar-width)] flex flex-col h-full">
@@ -44,7 +46,7 @@ export function Sidebar() {
 
       {/* Nav Links */}
       <nav className="flex-1 px-3 py-2 flex flex-col gap-1">
-        {links.map(({ to, icon: Icon, label }) => (
+        {links.map(({ to, icon: Icon, i18nKey }) => (
           <NavLink
             key={to}
             to={to}
@@ -53,7 +55,7 @@ export function Sidebar() {
             }
           >
             <Icon size={18} strokeWidth={1.8} />
-            <span>{label}</span>
+            <span>{t(i18nKey)}</span>
           </NavLink>
         ))}
       </nav>

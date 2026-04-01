@@ -3,12 +3,14 @@ import { Plus, Trash2, Edit, Clock, Gamepad2, Image } from 'lucide-react'
 import { useProfileStore, type Profile, type LoaderType } from '../stores/profileStore'
 import { useDraggable } from '../lib/useDraggable'
 import { ResourceSearch, type ResourceEntry } from '../components/profiles/ResourceSearch'
+import { InstanceDetail } from '../components/profiles/InstanceDetail'
 
 export function ProfilesPage() {
   const { profiles, selectedProfileId, versions, fabricVersions, loadProfiles, createProfile, updateProfile, deleteProfile, selectProfile, fetchVersions, fetchFabricVersions } = useProfileStore()
   const [editing, setEditing] = useState<Profile | null>(null)
   const [showEditor, setShowEditor] = useState(false)
   const [resources, setResources] = useState<ResourceEntry[]>([])
+  const [detailProfile, setDetailProfile] = useState<Profile | null>(null)
   const drag = useDraggable()
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export function ProfilesPage() {
   const openNewProfile = () => {
     setEditing({
       id: '',
-      name: 'New Profile',
+      name: 'New Instance',
       icon: 'sword',
       mc_version: versions.find(v => v.type === 'release')?.id || '1.21.4',
       loader_type: 'vanilla',
@@ -104,17 +106,35 @@ export function ProfilesPage() {
 
   const releaseVersions = versions.filter(v => v.type === 'release')
 
+  const handleInstanceClick = (profile: Profile) => {
+    selectProfile(profile.id)
+    setDetailProfile(profile)
+  }
+
+  // Detail view
+  if (detailProfile) {
+    return (
+      <div className="max-w-[800px] mx-auto fade-in">
+        <InstanceDetail
+          profile={detailProfile}
+          onBack={() => setDetailProfile(null)}
+        />
+      </div>
+    )
+  }
+
+  // Grid view
   return (
     <div className="max-w-[700px] mx-auto fade-in">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-xl font-semibold">Profiles</h1>
+        <h1 className="text-xl font-semibold">Instances</h1>
         <button className="glass-btn glass-btn-primary" onClick={openNewProfile}>
           <Plus size={16} />
-          New Profile
+          New Instance
         </button>
       </div>
 
-      {/* Profile Grid */}
+      {/* Instance Grid */}
       <div className="grid grid-cols-2 gap-4">
         {profiles.map(profile => (
           <div
@@ -122,7 +142,7 @@ export function ProfilesPage() {
             className={`glass p-5 cursor-pointer group ${
               selectedProfileId === profile.id ? 'border-white/[0.16]!' : ''
             }`}
-            onClick={() => selectProfile(profile.id)}
+            onClick={() => handleInstanceClick(profile)}
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-4">
@@ -171,7 +191,7 @@ export function ProfilesPage() {
         <div className="modal-overlay" onClick={() => setShowEditor(false)}>
           <div className="modal-content" ref={drag.ref} onMouseDown={drag.onMouseDown} onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-6 cursor-grab select-none">
-              {editing.id ? 'Edit Profile' : 'New Profile'}
+              {editing.id ? 'Edit Instance' : 'New Instance'}
             </h2>
 
             <div className="flex flex-col gap-5">
@@ -182,7 +202,7 @@ export function ProfilesPage() {
                   className="glass-input"
                   value={editing.name}
                   onChange={e => setEditing({ ...editing, name: e.target.value })}
-                  placeholder="Profile name"
+                  placeholder="Instance name"
                 />
               </div>
 

@@ -5,10 +5,10 @@
     --bg: #0e0e0e;
     --bg-2: #151515;
     --bg-3: #1c1c1c;
-    --glass-bg: rgba(255, 255, 255, 0.04);
-    --glass-bg-hover: rgba(255, 255, 255, 0.07);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-border-hover: rgba(255, 255, 255, 0.14);
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-bg-hover: rgba(255, 255, 255, 0.055);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-border-hover: rgba(255, 255, 255, 0.12);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     --glass-blur: 24px;
     --text-1: #f0f0f0;
@@ -40,6 +40,11 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  input, textarea {
+    user-select: text;
   }
 
   ::-webkit-scrollbar {
@@ -76,7 +81,7 @@
     position: absolute;
     border-radius: 50%;
     filter: blur(120px);
-    opacity: 0.05;
+    opacity: 0.03;
     animation: float 20s ease-in-out infinite;
   }
 
@@ -95,6 +100,44 @@
     bottom: -200px;
     left: -100px;
     animation-delay: -10s;
+  }
+
+  /* Cursor Glow with Grid reveal */
+  .cursor-glow {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background:
+      radial-gradient(
+        300px circle at var(--glow-x, -999px) var(--glow-y, -999px),
+        rgba(255, 255, 255, 0.04) 0%,
+        transparent 100%
+      );
+    mask-image:
+      radial-gradient(
+        300px circle at var(--glow-x, -999px) var(--glow-y, -999px),
+        black 0%,
+        transparent 100%
+      );
+    -webkit-mask-image:
+      radial-gradient(
+        300px circle at var(--glow-x, -999px) var(--glow-y, -999px),
+        black 0%,
+        transparent 100%
+      );
+  }
+
+  .cursor-glow::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 
   /* Glass Card */

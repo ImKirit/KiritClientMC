@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, HardDrive, Palette, Sparkles } from 'lucide-react'
+import { RefreshCw, HardDrive, Palette, Sparkles, Globe } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useI18n, type Locale } from '../lib/i18n'
 
 const bgPresets = [
   { name: 'Default', bg: '#0e0e0e', orbs: 'rgba(255,255,255,0.05)' },
@@ -22,6 +23,7 @@ const accentColors = [
 
 export function SettingsPage() {
   const { settings, detectedJava, isLoading, loadSettings, updateSettings, detectJava } = useSettingsStore()
+  const { locale, setLocale, t } = useI18n()
   const [selectedBg, setSelectedBg] = useState(0)
   const [selectedAccent, setSelectedAccent] = useState(0)
 
@@ -52,7 +54,32 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-[600px] mx-auto fade-in pb-8">
-      <h1 className="text-xl font-semibold mb-8">Settings</h1>
+      <h1 className="text-xl font-semibold mb-8">{t('settings.title')}</h1>
+
+      {/* Language */}
+      <section className="glass p-7 mb-8">
+        <div className="flex items-center gap-2 mb-6">
+          <Globe size={16} className="text-[var(--text-2)]" />
+          <h2 className="font-medium text-[15px]">{t('settings.language')}</h2>
+        </div>
+        <div className="flex gap-3">
+          {([
+            { code: 'en' as Locale, label: 'English', flag: '🇬🇧' },
+            { code: 'de' as Locale, label: 'Deutsch', flag: '🇩🇪' },
+          ]).map(lang => (
+            <button
+              key={lang.code}
+              className={`glass-btn text-[13px] px-5 py-3 gap-3 ${
+                locale === lang.code ? 'glass-btn-primary' : ''
+              }`}
+              onClick={() => setLocale(lang.code)}
+            >
+              <span className="text-base">{lang.flag}</span>
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* Appearance */}
       <section className="glass p-7 mb-8">
