@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, HardDrive, Palette, Sparkles, Globe } from 'lucide-react'
+import { RefreshCw, HardDrive, Palette, Sparkles, Globe, MousePointer2 } from 'lucide-react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useI18n, type Locale } from '../lib/i18n'
 
@@ -26,6 +26,8 @@ export function SettingsPage() {
   const { locale, setLocale, t } = useI18n()
   const [selectedBg, setSelectedBg] = useState(0)
   const [selectedAccent, setSelectedAccent] = useState(0)
+  const [glowEnabled, setGlowEnabled] = useState(() => localStorage.getItem('glow-enabled') !== 'false')
+  const [glowSize, setGlowSize] = useState(() => parseInt(localStorage.getItem('glow-size') || '150'))
 
   useEffect(() => {
     loadSettings()
@@ -168,6 +170,56 @@ export function SettingsPage() {
             />
           </label>
         </div>
+      </section>
+
+      {/* Cursor Glow */}
+      <section className="glass p-7 mb-8">
+        <div className="flex items-center gap-2 mb-6">
+          <MousePointer2 size={16} className="text-[var(--text-2)]" />
+          <h2 className="font-medium text-[15px]">Cursor Glow</h2>
+        </div>
+
+        <label className="flex items-center justify-between py-3 cursor-pointer mb-2">
+          <span className="text-[14px]">{t('settings.glowEnabled')}</span>
+          <input
+            type="checkbox"
+            checked={glowEnabled}
+            onChange={(e) => {
+              const enabled = e.target.checked
+              setGlowEnabled(enabled)
+              localStorage.setItem('glow-enabled', String(enabled))
+              const glow = document.querySelector('.cursor-glow') as HTMLElement
+              if (glow) glow.style.display = enabled ? '' : 'none'
+            }}
+            className="accent-white w-4 h-4"
+          />
+        </label>
+
+        {glowEnabled && (
+          <div>
+            <label className="text-[13px] text-[var(--text-2)] mb-2.5 block">
+              {t('settings.glowSize')}: {glowSize}px
+            </label>
+            <input
+              type="range"
+              min="50"
+              max="400"
+              step="10"
+              value={glowSize}
+              onChange={e => {
+                const size = parseInt(e.target.value)
+                setGlowSize(size)
+                localStorage.setItem('glow-size', String(size))
+                document.documentElement.style.setProperty('--glow-size', `${size}px`)
+              }}
+              className="w-full accent-white"
+            />
+            <div className="flex justify-between text-[11px] text-[var(--text-3)] mt-1">
+              <span>50px</span>
+              <span>400px</span>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Java */}

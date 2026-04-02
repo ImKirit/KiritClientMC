@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "kiritclient",
+  "version": "${version}",
+  "name": "KiritClient",
+  "description": "KiritClient ingame features — capes, cosmetics, friends, waypoints, hitboxes and more.",
+  "authors": ["ImKirit"],
+  "contact": {
+    "homepage": "https://imkirit.dev",
+    "sources": "https://github.com/ImKirit/KiritClient"
+  },
+  "license": "All-Rights-Reserved",
+  "icon": "assets/kiritclient/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.imkirit.client.KiritClientMod"]
+  },
+  "mixins": ["kiritclient.mixins.json"],
+  "accessWidener": "kiritclient.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { Search, Download, Package, Plus, X } from 'lucide-react'
+import { useI18n } from '../../lib/i18n'
 
 type ResourceType = 'mod' | 'resourcepack' | 'shader'
 
@@ -26,13 +27,14 @@ interface ResourceSearchProps {
   onResourcesChange: (resources: ResourceEntry[]) => void
 }
 
-const tabs: { type: ResourceType; label: string; modrinthType: string }[] = [
-  { type: 'mod', label: 'Mods', modrinthType: 'mod' },
-  { type: 'resourcepack', label: 'Textures', modrinthType: 'resourcepack' },
-  { type: 'shader', label: 'Shaders', modrinthType: 'shader' },
+const tabKeys: { type: ResourceType; labelKey: string; modrinthType: string }[] = [
+  { type: 'mod', labelKey: 'common.mods', modrinthType: 'mod' },
+  { type: 'resourcepack', labelKey: 'common.texturePacks', modrinthType: 'resourcepack' },
+  { type: 'shader', labelKey: 'common.shaders', modrinthType: 'shader' },
 ]
 
 export function ResourceSearch({ mcVersion, loaderType, resources, onResourcesChange }: ResourceSearchProps) {
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<ResourceType>('mod')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<ModrinthProject[]>([])
@@ -46,7 +48,7 @@ export function ResourceSearch({ mcVersion, loaderType, resources, onResourcesCh
     }
     setSearching(true)
     try {
-      const tab = tabs.find(t => t.type === type)!
+      const tab = tabKeys.find(t => t.type === type)!
       const facets: string[][] = [
         [`versions:${mcVersion}`],
         [`project_type:${tab.modrinthType}`],
@@ -110,13 +112,13 @@ export function ResourceSearch({ mcVersion, loaderType, resources, onResourcesCh
 
       {/* Tabs */}
       <div className="flex gap-2 mb-3">
-        {tabs.map(tab => (
+        {tabKeys.map(tab => (
           <button
             key={tab.type}
             className={`glass-btn text-[12px] px-3.5 py-2 ${activeTab === tab.type ? 'glass-btn-primary' : ''}`}
             onClick={() => switchTab(tab.type)}
           >
-            {tab.label}
+            {t(tab.labelKey)}
             {resources.filter(r => r.type === tab.type).length > 0 && (
               <span className="ml-1.5 text-[11px] opacity-60">
                 ({resources.filter(r => r.type === tab.type).length})
@@ -153,14 +155,14 @@ export function ResourceSearch({ mcVersion, loaderType, resources, onResourcesCh
         <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
         <input
           className="glass-input pl-9"
-          placeholder={`Search ${tabs.find(t => t.type === activeTab)?.label.toLowerCase()} for ${mcVersion}...`}
+          placeholder={`${t('common.search')} ${t(tabKeys.find(tk => tk.type === activeTab)!.labelKey)}...`}
           value={query}
           onChange={e => handleInput(e.target.value)}
         />
       </div>
 
       {searching && (
-        <p className="text-[12px] text-[var(--text-3)] mb-2">Searching...</p>
+        <p className="text-[12px] text-[var(--text-3)] mb-2">{t('common.searching')}</p>
       )}
 
       {results.length > 0 && (
@@ -208,7 +210,7 @@ export function ResourceSearch({ mcVersion, loaderType, resources, onResourcesCh
       )}
 
       {!searching && query && results.length === 0 && (
-        <p className="text-[12px] text-[var(--text-3)]">No results for "{query}"</p>
+        <p className="text-[12px] text-[var(--text-3)]">{t('common.noResults')}</p>
       )}
     </div>
   )

@@ -14,6 +14,15 @@ pub struct Account {
     pub is_active: bool,
 }
 
+/// On-disk representation without sensitive tokens
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccountOnDisk {
+    pub uuid: String,
+    pub username: String,
+    pub skin_url: Option<String>,
+    pub is_active: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
     pub id: String,
@@ -42,6 +51,18 @@ pub enum LoaderType {
     Forge,
     Neoforge,
     Quilt,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstanceResource {
+    pub slug: String,
+    pub title: String,
+    pub icon_url: Option<String>,
+    pub resource_type: String, // "mod", "resourcepack", "shader"
+    pub enabled: bool,
+    pub version_id: Option<String>,   // Modrinth version ID
+    pub file_name: Option<String>,    // Downloaded file name
+    pub file_url: Option<String>,     // Download URL
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

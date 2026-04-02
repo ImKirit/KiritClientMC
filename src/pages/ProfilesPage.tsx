@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit, Clock, Gamepad2, Image } from 'lucide-react'
+import { Plus, Trash2, Edit, Clock, Gamepad2, Image, Upload, Download } from 'lucide-react'
+import { invoke } from '@tauri-apps/api/core'
 import { useProfileStore, type Profile, type LoaderType } from '../stores/profileStore'
-import { useDraggable } from '../lib/useDraggable'
+import { Modal } from '../components/ui/Modal'
 import { ResourceSearch, type ResourceEntry } from '../components/profiles/ResourceSearch'
 import { InstanceDetail } from '../components/profiles/InstanceDetail'
+import { useI18n } from '../lib/i18n'
 
 export function ProfilesPage() {
   const { profiles, selectedProfileId, versions, fabricVersions, loadProfiles, createProfile, updateProfile, deleteProfile, selectProfile, fetchVersions, fetchFabricVersions } = useProfileStore()
+  const { t } = useI18n()
   const [editing, setEditing] = useState<Profile | null>(null)
   const [showEditor, setShowEditor] = useState(false)
   const [resources, setResources] = useState<ResourceEntry[]>([])
   const [detailProfile, setDetailProfile] = useState<Profile | null>(null)
-  const drag = useDraggable()
 
   useEffect(() => {
     loadProfiles()
@@ -111,6 +113,46 @@ export function ProfilesPage() {
     setDetailProfile(profile)
   }
 
+  const handleImportPack = async () => {
+    try {
+      const { open: openDialog } = await import('@tauri-apps/plugin-dialog')
+      const selected = await openDialog({
+        title: 'Import Modpack',
+        filters: [
+          { name: 'All Modpacks', extensions: ['mrpack', 'kiritpack', 'noriskpack', 'zip'] },
+          { name: 'Modrinth (.mrpack)', extensions: ['mrpack'] },
+          { name: 'KiritClient (.kiritpack)', extensions: ['kiritpack'] },
+          { name: 'Norisk (.noriskpack / .zip)', extensions: ['noriskpack', 'zip'] },
+        ],
+      })
+      if (selected) {
+        await invoke<Profile>('import_mrpack', { filePath: selected })
+        await loadProfiles()
+      }
+    } catch {
+      console.error('File dialog not available')
+    }
+  }
+
+  const handleExportPack = async (profile: Profile) => {
+    try {
+      const { save: saveDialog } = await import('@tauri-apps/plugin-dialog')
+      const selected = await saveDialog({
+        title: 'Export Modpack',
+        defaultPath: `${profile.name.replace(/[^a-zA-Z0-9]/g, '_')}.kiritpack`,
+        filters: [
+          { name: 'KiritClient (.kiritpack)', extensions: ['kiritpack'] },
+          { name: 'Modrinth (.mrpack)', extensions: ['mrpack'] },
+        ],
+      })
+      if (selected) {
+        await invoke('export_mrpack', { profileId: profile.id, exportPath: selected })
+      }
+    } catch {
+      console.error('File dialog not available')
+    }
+  }
+
   // Detail view
   if (detailProfile) {
     return (
@@ -127,11 +169,16 @@ export function ProfilesPage() {
   return (
     <div className="max-w-[700px] mx-auto fade-in">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-xl font-semibold">Instances</h1>
-        <button className="glass-btn glass-btn-primary" onClick={openNewProfile}>
-          <Plus size={16} />
-          New Instance
-        </button>
+        <h1 className="text-xl font-semibold">{t('instances.title')}</h1>
+        <div className="flex gap-2">
+          <button className="glass-btn" onClick={handleImportPack} title="Import .mrpack">
+            <Upload size={16} />
+          </button>
+          <button className="glass-btn glass-btn-primary" onClick={openNewProfile}>
+            <Plus size={16} />
+            {t('instances.new')}
+          </button>
+        </div>
       </div>
 
       {/* Instance Grid */}
@@ -161,6 +208,11 @@ export function ProfilesPage() {
               </div>
               <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button className="p-1.5 rounded-lg hover:bg-white/[0.06]"
+                        onClick={(e) => { e.stopPropagation(); handleExportPack(profile) }}
+                        title="Export .mrpack">
+                  <Download size={14} className="text-[var(--text-2)]" />
+                </button>
+                <button className="p-1.5 rounded-lg hover:bg-white/[0.06]"
                         onClick={(e) => { e.stopPropagation(); openEditProfile(profile) }}>
                   <Edit size={14} className="text-[var(--text-2)]" />
                 </button>
@@ -188,149 +240,147 @@ export function ProfilesPage() {
 
       {/* Profile Editor Modal */}
       {showEditor && editing && (
-        <div className="modal-overlay" onClick={() => setShowEditor(false)}>
-          <div className="modal-content" ref={drag.ref} onMouseDown={drag.onMouseDown} onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-6 cursor-grab select-none">
-              {editing.id ? 'Edit Instance' : 'New Instance'}
-            </h2>
+        <Modal onClose={() => setShowEditor(false)}>
+          <h2 className="text-lg font-semibold mb-6">
+            {editing.id ? t('instances.edit') : t('instances.new')}
+          </h2>
 
-            <div className="flex flex-col gap-5">
-              {/* Name */}
-              <div>
-                <label className="text-[13px] text-[var(--text-2)] mb-2 block">Name</label>
-                <input
-                  className="glass-input"
-                  value={editing.name}
-                  onChange={e => setEditing({ ...editing, name: e.target.value })}
-                  placeholder="Instance name"
-                />
-              </div>
+          <div className="flex flex-col gap-5">
+            {/* Name */}
+            <div>
+              <label className="text-[13px] text-[var(--text-2)] mb-2 block">{t('instances.name')}</label>
+              <input
+                className="glass-input"
+                value={editing.name}
+                onChange={e => setEditing({ ...editing, name: e.target.value })}
+                placeholder={t('instances.namePlaceholder')}
+              />
+            </div>
 
-              {/* Icon */}
-              <div>
-                <label className="text-[13px] text-[var(--text-2)] mb-2 block">Icon</label>
-                <div className="flex gap-3 items-center">
-                  {['sword', 'pickaxe', 'shield', 'game'].map(icon => (
-                    <button
-                      key={icon}
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-all ${
-                        editing.icon === icon
-                          ? 'bg-white/[0.1] border border-white/[0.15]'
-                          : 'bg-white/[0.03] border border-transparent hover:bg-white/[0.06]'
-                      }`}
-                      onClick={() => setEditing({ ...editing, icon })}
-                    >
-                      {iconEmoji(icon)}
-                    </button>
-                  ))}
+            {/* Icon */}
+            <div>
+              <label className="text-[13px] text-[var(--text-2)] mb-2 block">{t('instances.icon')}</label>
+              <div className="flex gap-3 items-center">
+                {['sword', 'pickaxe', 'shield', 'game'].map(icon => (
                   <button
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
-                      isCustomImage(editing.icon)
+                    key={icon}
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-all ${
+                      editing.icon === icon
                         ? 'bg-white/[0.1] border border-white/[0.15]'
                         : 'bg-white/[0.03] border border-transparent hover:bg-white/[0.06]'
                     }`}
-                    onClick={handleImageUpload}
+                    onClick={() => setEditing({ ...editing, icon })}
                   >
-                    {isCustomImage(editing.icon) ? (
-                      <img src={editing.icon} alt="" className="w-full h-full rounded-xl object-cover" />
-                    ) : (
-                      <Image size={18} className="text-[var(--text-3)]" />
-                    )}
+                    {iconEmoji(icon)}
                   </button>
-                </div>
-              </div>
-
-              {/* MC Version */}
-              <div>
-                <label className="text-[13px] text-[var(--text-2)] mb-2 block">Minecraft Version</label>
-                <select
-                  className="glass-select"
-                  value={editing.mc_version}
-                  onChange={e => handleVersionChange(e.target.value)}
+                ))}
+                <button
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                    isCustomImage(editing.icon)
+                      ? 'bg-white/[0.1] border border-white/[0.15]'
+                      : 'bg-white/[0.03] border border-transparent hover:bg-white/[0.06]'
+                  }`}
+                  onClick={handleImageUpload}
                 >
-                  {releaseVersions.map(v => (
-                    <option key={v.id} value={v.id}>{v.id}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Loader Type */}
-              <div>
-                <label className="text-[13px] text-[var(--text-2)] mb-2 block">Mod Loader</label>
-                <div className="flex gap-2.5 flex-wrap">
-                  {(['vanilla', 'fabric', 'forge', 'neoforge', 'quilt'] as LoaderType[]).map(type => (
-                    <button
-                      key={type}
-                      className={`glass-btn text-[13px] px-4 py-2.5 ${
-                        editing.loader_type === type ? 'glass-btn-primary' : ''
-                      }`}
-                      onClick={() => handleLoaderChange(type)}
-                    >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Fabric Loader Version */}
-              {editing.loader_type === 'fabric' && fabricVersions.length > 0 && (
-                <div>
-                  <label className="text-[13px] text-[var(--text-2)] mb-2 block">Fabric Version</label>
-                  <select
-                    className="glass-select"
-                    value={editing.loader_version || ''}
-                    onChange={e => setEditing({ ...editing, loader_version: e.target.value || null })}
-                  >
-                    <option value="">Latest Stable</option>
-                    {fabricVersions.map(v => (
-                      <option key={v.loader.version} value={v.loader.version}>
-                        {v.loader.version} {v.loader.stable ? '(stable)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Memory */}
-              <div>
-                <label className="text-[13px] text-[var(--text-2)] mb-2 block">
-                  Memory: {editing.memory_mb}MB
-                </label>
-                <input
-                  type="range"
-                  min="1024"
-                  max="16384"
-                  step="512"
-                  value={editing.memory_mb}
-                  onChange={e => setEditing({ ...editing, memory_mb: parseInt(e.target.value) })}
-                  className="w-full accent-white"
-                />
-                <div className="flex justify-between text-[11px] text-[var(--text-3)] mt-1">
-                  <span>1GB</span>
-                  <span>16GB</span>
-                </div>
-              </div>
-
-              {/* Resources (Mods, Textures, Shaders) */}
-              <ResourceSearch
-                mcVersion={editing.mc_version}
-                loaderType={editing.loader_type}
-                resources={resources}
-                onResourcesChange={setResources}
-              />
-
-              {/* Save/Cancel */}
-              <div className="flex gap-3 mt-3">
-                <button className="glass-btn flex-1" onClick={() => setShowEditor(false)}>
-                  Cancel
-                </button>
-                <button className="glass-btn glass-btn-primary flex-1" onClick={saveProfile}>
-                  {editing.id ? 'Save' : 'Create'}
+                  {isCustomImage(editing.icon) ? (
+                    <img src={editing.icon} alt="" className="w-full h-full rounded-xl object-cover" />
+                  ) : (
+                    <Image size={18} className="text-[var(--text-3)]" />
+                  )}
                 </button>
               </div>
             </div>
+
+            {/* MC Version */}
+            <div>
+              <label className="text-[13px] text-[var(--text-2)] mb-2 block">{t('instances.version')}</label>
+              <select
+                className="glass-select"
+                value={editing.mc_version}
+                onChange={e => handleVersionChange(e.target.value)}
+              >
+                {releaseVersions.map(v => (
+                  <option key={v.id} value={v.id}>{v.id}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Loader Type */}
+            <div>
+              <label className="text-[13px] text-[var(--text-2)] mb-2 block">{t('instances.loader')}</label>
+              <div className="flex gap-2.5 flex-wrap">
+                {(['vanilla', 'fabric', 'forge', 'neoforge', 'quilt'] as LoaderType[]).map(type => (
+                  <button
+                    key={type}
+                    className={`glass-btn text-[13px] px-4 py-2.5 ${
+                      editing.loader_type === type ? 'glass-btn-primary' : ''
+                    }`}
+                    onClick={() => handleLoaderChange(type)}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Fabric Loader Version */}
+            {editing.loader_type === 'fabric' && fabricVersions.length > 0 && (
+              <div>
+                <label className="text-[13px] text-[var(--text-2)] mb-2 block">{t('instances.fabricVersion')}</label>
+                <select
+                  className="glass-select"
+                  value={editing.loader_version || ''}
+                  onChange={e => setEditing({ ...editing, loader_version: e.target.value || null })}
+                >
+                  <option value="">{t('instances.latestStable')}</option>
+                  {fabricVersions.map(v => (
+                    <option key={v.loader.version} value={v.loader.version}>
+                      {v.loader.version} {v.loader.stable ? '(stable)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Memory */}
+            <div>
+              <label className="text-[13px] text-[var(--text-2)] mb-2 block">
+                {t('instances.memory')}: {editing.memory_mb}MB
+              </label>
+              <input
+                type="range"
+                min="1024"
+                max="16384"
+                step="512"
+                value={editing.memory_mb}
+                onChange={e => setEditing({ ...editing, memory_mb: parseInt(e.target.value) })}
+                className="w-full accent-white"
+              />
+              <div className="flex justify-between text-[11px] text-[var(--text-3)] mt-1">
+                <span>1GB</span>
+                <span>16GB</span>
+              </div>
+            </div>
+
+            {/* Resources (Mods, Textures, Shaders) */}
+            <ResourceSearch
+              mcVersion={editing.mc_version}
+              loaderType={editing.loader_type}
+              resources={resources}
+              onResourcesChange={setResources}
+            />
+
+            {/* Save/Cancel */}
+            <div className="flex gap-3 mt-3">
+              <button className="glass-btn flex-1" onClick={() => setShowEditor(false)}>
+                {t('instances.cancel')}
+              </button>
+              <button className="glass-btn glass-btn-primary flex-1" onClick={saveProfile}>
+                {editing.id ? t('instances.save') : t('instances.create')}
+              </button>
+            </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

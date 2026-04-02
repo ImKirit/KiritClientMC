@@ -4,12 +4,14 @@ import { useProfileStore } from '../stores/profileStore'
 import { useAuthStore } from '../stores/authStore'
 import { useLaunchStore } from '../stores/launchStore'
 import { useNavigate } from 'react-router-dom'
+import { useI18n } from '../lib/i18n'
 
 export function HomePage() {
   const selectedProfile = useProfileStore(s => s.getSelectedProfile())
   const activeAccount = useAuthStore(s => s.getActiveAccount())
   const { isLaunching, progress, error, launchGame, setupListeners, reset } = useLaunchStore()
   const navigate = useNavigate()
+  const { t } = useI18n()
 
   useEffect(() => {
     let unlisten: (() => void) | undefined
@@ -54,7 +56,7 @@ export function HomePage() {
             onClick={() => navigate('/accounts')}
           >
             <LogIn size={15} />
-            Login
+            {t('common.login')}
           </button>
         )}
       </div>
@@ -105,12 +107,12 @@ export function HomePage() {
         >
           {isLaunching ? (
             <span className="text-sm font-medium tracking-wider">
-              {progress?.stage === 'running' ? 'RUNNING' : 'LOADING...'}
+              {progress?.stage === 'running' ? t('home.running') : t('home.loading')}
             </span>
           ) : (
             <span className="flex items-center gap-3">
               <Play size={20} fill="white" />
-              PLAY
+              {t('home.play')}
             </span>
           )}
         </button>
@@ -135,7 +137,7 @@ export function HomePage() {
           <div className="glass px-6 py-4 border-[rgba(255,68,68,0.3)]! max-w-[420px] fade-in relative z-10">
             <p className="text-[13px] text-[#ff6666]">{error}</p>
             <button className="text-[12px] text-[var(--text-3)] mt-2 underline" onClick={reset}>
-              Dismiss
+              {t('home.dismiss')}
             </button>
           </div>
         )}
@@ -143,7 +145,7 @@ export function HomePage() {
         {/* Login hint */}
         {!activeAccount && (
           <p className="text-[13px] text-[var(--text-3)] relative z-10">
-            Log in with a Microsoft account to play
+            {t('home.loginHint')}
           </p>
         )}
       </div>

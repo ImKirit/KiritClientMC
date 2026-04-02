@@ -12,6 +12,7 @@
     "http:default",
     "store:default",
     "os:default",
-    "process:default"
+    "process:default",
+    "dialog:default"
   ]
 }

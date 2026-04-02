@@ -30,7 +30,6 @@ interface AuthStore {
   accounts: Account[]
   isLoading: boolean
   loginFlow: {
-    active: boolean
     userCode: string
     verificationUri: string
     deviceCode: string
@@ -61,7 +60,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const resp = await invoke<DeviceCodeResponse>('ms_auth_start')
       set({
         loginFlow: {
-          active: true,
           userCode: resp.user_code,
           verificationUri: resp.verification_uri,
           deviceCode: resp.device_code,

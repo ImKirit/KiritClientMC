@@ -172,6 +172,12 @@ pub async fn launch_minecraft(
     cmd.args(&jvm_args);
     cmd.arg(&version.main_class);
     cmd.args(&game_args);
+    // Extra user game args
+    for arg in &config.game_args {
+        if !arg.is_empty() {
+            cmd.arg(arg);
+        }
+    }
     cmd.current_dir(&config.game_dir);
 
     log::info!("Launching: {} {} {} {}", config.java_path, jvm_args.join(" "), version.main_class, game_args.join(" "));

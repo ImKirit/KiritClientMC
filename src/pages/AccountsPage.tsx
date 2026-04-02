@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Trash2, Check, Copy, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, Check, Copy, ExternalLink, AlertTriangle } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
-import { useDraggable } from '../lib/useDraggable'
+import { Modal } from '../components/ui/Modal'
+import { useI18n } from '../lib/i18n'
 
 export function AccountsPage() {
   const { accounts, loginFlow, isLoading, loadAccounts, startLogin, pollLogin, removeAccount, setActiveAccount, cancelLogin } = useAuthStore()
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const drag = useDraggable()
+  const pollingBusy = useRef(false)
 
   useEffect(() => {
     loadAccounts()
@@ -15,19 +18,48 @@ export function AccountsPage() {
 
   useEffect(() => {
     if (loginFlow) {
+      setAuthError(null)
+
+      // Clear any existing interval first
+      if (pollRef.current) clearInterval(pollRef.current)
+      pollingBusy.current = false
+
       pollRef.current = setInterval(async () => {
+        // Skip if a poll request is already in flight
+        if (pollingBusy.current) return
+        pollingBusy.current = true
+
         try {
           const result = await pollLogin()
           if (result) {
-            if (pollRef.current) clearInterval(pollRef.current)
+            // Login succeeded — stop polling
+            if (pollRef.current) {
+              clearInterval(pollRef.current)
+              pollRef.current = null
+            }
           }
-        } catch {
-          if (pollRef.current) clearInterval(pollRef.current)
+        } catch (e) {
+          // Stop polling on error
+          if (pollRef.current) {
+            clearInterval(pollRef.current)
+            pollRef.current = null
+          }
+          const msg = e instanceof Error ? e.message : String(e)
+          // Ignore "already been used" — means auth chain completed
+          if (!msg.includes('already been used')) {
+            setAuthError(msg)
+          }
+        } finally {
+          pollingBusy.current = false
         }
       }, 5000)
     }
+
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
     }
   }, [loginFlow])
 
@@ -51,48 +83,66 @@ export function AccountsPage() {
   return (
     <div className="max-w-[600px] mx-auto fade-in">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-xl font-semibold">Accounts</h1>
-        <button className="glass-btn glass-btn-primary" onClick={startLogin} disabled={isLoading || !!loginFlow}>
+        <h1 className="text-xl font-semibold">{t('accounts.title')}</h1>
+        <button className="glass-btn glass-btn-primary" onClick={async () => {
+          try {
+            setAuthError(null)
+            await startLogin()
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e)
+            setAuthError(msg)
+          }
+        }} disabled={isLoading || !!loginFlow}>
           <Plus size={16} />
-          Add Account
+          {t('accounts.addAccount')}
         </button>
       </div>
 
       {/* Login Flow Modal */}
       {loginFlow && (
-        <div className="modal-overlay" onClick={cancelLogin}>
-          <div className="modal-content" ref={drag.ref} onMouseDown={drag.onMouseDown} onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-5 cursor-grab select-none">Microsoft Login</h2>
-            <p className="text-[14px] text-[var(--text-2)] mb-5">
-              Go to the link below and enter this code:
-            </p>
+        <Modal onClose={cancelLogin}>
+          <h2 className="text-lg font-semibold mb-5">{t('accounts.msLogin')}</h2>
+          <p className="text-[14px] text-[var(--text-2)] mb-5">
+            {t('accounts.msLoginDesc')}
+          </p>
 
-            <div className="flex items-center gap-3 mb-5">
-              <div className="flex-1 glass-input text-center text-xl font-mono font-bold tracking-[6px]">
-                {loginFlow.userCode}
-              </div>
-              <button className="glass-btn" onClick={copyCode}>
-                {copied ? <Check size={16} /> : <Copy size={16} />}
-              </button>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 glass-input text-center text-xl font-mono font-bold tracking-[6px]">
+              {loginFlow.userCode}
             </div>
-
-            <button
-              className="glass-btn glass-btn-primary w-full mb-5"
-              onClick={() => openLink(loginFlow.verificationUri)}
-            >
-              <ExternalLink size={16} />
-              Open {loginFlow.verificationUri}
-            </button>
-
-            <div className="flex items-center gap-2 justify-center mb-5">
-              <div className="w-2 h-2 rounded-full bg-white/20 animate-pulse" />
-              <p className="text-[13px] text-[var(--text-3)]">Waiting for authorization...</p>
-            </div>
-
-            <button className="glass-btn w-full" onClick={cancelLogin}>
-              Cancel
+            <button className="glass-btn" onClick={copyCode}>
+              {copied ? <Check size={16} /> : <Copy size={16} />}
             </button>
           </div>
+
+          <button
+            className="glass-btn glass-btn-primary w-full mb-5"
+            onClick={() => openLink(loginFlow.verificationUri)}
+          >
+            <ExternalLink size={16} />
+            {t('accounts.openLink', { uri: loginFlow.verificationUri })}
+          </button>
+
+          <div className="flex items-center gap-2 justify-center mb-5">
+            <div className="w-2 h-2 rounded-full bg-white/20 animate-pulse" />
+            <p className="text-[13px] text-[var(--text-3)]">{t('accounts.waiting')}</p>
+          </div>
+
+          <button className="glass-btn w-full" onClick={cancelLogin}>
+            {t('common.cancel')}
+          </button>
+        </Modal>
+      )}
+
+      {/* Auth Error */}
+      {authError && (
+        <div className="glass border-red-500/30! mb-6 p-5 flex items-start gap-4">
+          <AlertTriangle size={20} className="text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-[14px] font-medium text-red-400 mb-1">Login failed</p>
+            <p className="text-[13px] text-[var(--text-2)] break-all">{authError}</p>
+          </div>
+          <button className="glass-btn p-1.5 text-[12px]" onClick={() => setAuthError(null)}>✕</button>
         </div>
       )}
 
@@ -100,9 +150,9 @@ export function AccountsPage() {
       <div className="flex flex-col gap-4">
         {accounts.length === 0 ? (
           <div className="glass p-10 text-center">
-            <p className="text-[var(--text-2)] text-[14px]">No accounts added yet</p>
+            <p className="text-[var(--text-2)] text-[14px]">{t('accounts.noAccounts')}</p>
             <p className="text-[var(--text-3)] text-[13px] mt-2">
-              Click "Add Account" to login with Microsoft
+              {t('accounts.noAccountsHint')}
             </p>
           </div>
         ) : (
@@ -125,7 +175,7 @@ export function AccountsPage() {
                   <span className="font-medium text-[15px]">{account.username}</span>
                   {account.is_active && (
                     <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/[0.08] text-[var(--text-2)]">
-                      Active
+                      {t('accounts.active')}
                     </span>
                   )}
                 </div>

@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { Upload, Shield } from 'lucide-react'
+import { useI18n } from '../lib/i18n'
 
 export function CosmeticsPage() {
+  const { t } = useI18n()
   const [dragOver, setDragOver] = useState(false)
 
   return (
     <div className="max-w-[600px] mx-auto fade-in">
-      <h1 className="text-xl font-semibold mb-8">Cosmetics</h1>
+      <h1 className="text-xl font-semibold mb-8">{t('cosmetics.title')}</h1>
 
       {/* Cape Upload */}
       <section className="glass p-6 mb-5">
-        <h3 className="font-medium text-[15px] mb-4">Your Cape</h3>
+        <h3 className="font-medium text-[15px] mb-4">{t('cosmetics.yourCape')}</h3>
         <div
           className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
             dragOver
@@ -23,20 +25,20 @@ export function CosmeticsPage() {
         >
           <Upload size={28} className="mx-auto mb-3 text-[var(--text-3)]" />
           <p className="text-[14px] text-[var(--text-2)] mb-1">
-            Drop a 64x32 PNG here or click to upload
+            {t('cosmetics.capeDrop')}
           </p>
           <p className="text-[12px] text-[var(--text-3)]">
-            Your cape will be visible to all KiritClient users
+            {t('cosmetics.capeVisible')}
           </p>
         </div>
       </section>
 
       {/* Cape Preview */}
       <section className="glass p-6 mb-5">
-        <h3 className="font-medium text-[15px] mb-4">Cape Preview</h3>
+        <h3 className="font-medium text-[15px] mb-4">{t('cosmetics.capePreview')}</h3>
         <div className="flex items-center justify-center py-8">
           <div className="w-[128px] h-[64px] rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-            <p className="text-[12px] text-[var(--text-3)]">No cape</p>
+            <p className="text-[12px] text-[var(--text-3)]">{t('cosmetics.noCape')}</p>
           </div>
         </div>
       </section>
@@ -44,21 +46,21 @@ export function CosmeticsPage() {
       {/* Creator Code */}
       <section className="glass p-6">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="font-medium text-[15px]">Creator Code</h3>
+          <h3 className="font-medium text-[15px]">{t('cosmetics.creatorCode')}</h3>
           <Shield size={14} className="text-[var(--text-3)]" />
         </div>
         <p className="text-[13px] text-[var(--text-2)] mb-4">
-          Enter a creator code to support your favorite content creator.
+          {t('cosmetics.creatorDesc')}
         </p>
         <div className="flex gap-3">
           <input
             className="glass-input"
-            placeholder="Enter code..."
+            placeholder={t('cosmetics.enterCode')}
           />
-          <button className="glass-btn glass-btn-primary whitespace-nowrap">Apply</button>
+          <button className="glass-btn glass-btn-primary whitespace-nowrap">{t('cosmetics.apply')}</button>
         </div>
         <p className="text-[11px] text-[var(--text-3)] mt-3">
-          Only selected creators can generate codes.
+          {t('cosmetics.creatorNote')}
         </p>
       </section>
     </div>

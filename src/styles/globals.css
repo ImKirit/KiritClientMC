@@ -112,19 +112,19 @@
     transition: opacity 0.3s ease;
     background:
       radial-gradient(
-        300px circle at var(--glow-x, -999px) var(--glow-y, -999px),
+        var(--glow-size, 150px) circle at var(--glow-x, -999px) var(--glow-y, -999px),
         rgba(255, 255, 255, 0.04) 0%,
         transparent 100%
       );
     mask-image:
       radial-gradient(
-        300px circle at var(--glow-x, -999px) var(--glow-y, -999px),
+        var(--glow-size, 150px) circle at var(--glow-x, -999px) var(--glow-y, -999px),
         black 0%,
         transparent 100%
       );
     -webkit-mask-image:
       radial-gradient(
-        300px circle at var(--glow-x, -999px) var(--glow-y, -999px),
+        var(--glow-size, 150px) circle at var(--glow-x, -999px) var(--glow-y, -999px),
         black 0%,
         transparent 100%
       );
@@ -348,29 +348,51 @@
     border: 1px solid var(--glass-border);
   }
 
-  /* Modal Overlay */
+  /* Modal Overlay — rendered via Portal in document.body */
   .modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 10000;
+    overflow-y: auto;
+    padding: 24px;
+    animation: overlayFadeIn 0.2s ease-out;
+  }
+
+  @keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .modal-content {
     background: var(--bg-2);
-    backdrop-filter: blur(30px);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 32px;
     width: 90%;
     max-width: 520px;
-    max-height: 80vh;
+    max-height: calc(100vh - 48px);
     overflow-y: auto;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+    animation: modalSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: default;
+  }
+
+  /* Draggable header zone cursor */
+  .modal-content > h2:first-child,
+  .modal-content > .modal-header {
+    cursor: grab;
+    user-select: none;
+  }
+
+  @keyframes modalSlideIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   /* Titlebar */

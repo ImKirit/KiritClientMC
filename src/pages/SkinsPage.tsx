@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Upload, Check, Trash2 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
+import { useI18n } from '../lib/i18n'
+import { SkinRenderer } from '../components/ui/SkinRenderer'
 
 interface SkinEntry {
   id: string
@@ -11,6 +13,7 @@ interface SkinEntry {
 
 export function SkinsPage() {
   const activeAccount = useAuthStore(s => s.getActiveAccount())
+  const { t } = useI18n()
   const [skins, setSkins] = useState<SkinEntry[]>([])
   const [activeSkinId, setActiveSkinId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -58,7 +61,7 @@ export function SkinsPage() {
 
   return (
     <div className="max-w-[700px] mx-auto fade-in pb-8">
-      <h1 className="text-xl font-semibold mb-8">Skins</h1>
+      <h1 className="text-xl font-semibold mb-8">{t('skins.title')}</h1>
 
       <div className="grid grid-cols-[1fr_220px] gap-6">
         {/* Left: Upload + Skin List */}
@@ -77,10 +80,10 @@ export function SkinsPage() {
           >
             <Upload size={24} className="mx-auto mb-3 text-[var(--text-3)]" />
             <p className="text-[14px] text-[var(--text-2)] mb-1">
-              Drop a 64x64 skin PNG or click to upload
+              {t('skins.dropSkin')}
             </p>
             <p className="text-[12px] text-[var(--text-3)]">
-              Supports classic (4px arms) and slim (3px arms)
+              {t('skins.dropSkinHint')}
             </p>
           </div>
 
@@ -88,7 +91,7 @@ export function SkinsPage() {
           <div className="flex flex-col gap-3">
             {skins.length === 0 ? (
               <div className="glass p-6 text-center">
-                <p className="text-[13px] text-[var(--text-3)]">No skins uploaded yet</p>
+                <p className="text-[13px] text-[var(--text-3)]">{t('skins.noSkins')}</p>
               </div>
             ) : (
               skins.map(skin => (
@@ -99,22 +102,22 @@ export function SkinsPage() {
                   }`}
                   onClick={() => equipSkin(skin.id)}
                 >
-                  <img
-                    src={skin.data}
-                    alt={skin.name}
-                    className="w-10 h-10 rounded-lg object-cover"
-                    style={{ imageRendering: 'pixelated' }}
+                  <SkinRenderer
+                    skinData={skin.data}
+                    slim={skin.slim}
+                    height={40}
+                    className="rounded-lg"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium truncate">{skin.name}</p>
                     <p className="text-[11px] text-[var(--text-3)]">
-                      {skin.slim ? 'Slim (Alex)' : 'Classic (Steve)'}
+                      {skin.slim ? t('skins.slimAlex') : t('skins.classicSteve')}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {activeSkinId === skin.id && (
                       <span className="text-[11px] px-2.5 py-1 rounded-full bg-white/[0.08] text-[var(--text-2)]">
-                        Equipped
+                        {t('skins.equipped')}
                       </span>
                     )}
                     <button
@@ -122,7 +125,7 @@ export function SkinsPage() {
                       onClick={(e) => { e.stopPropagation(); setSkins(prev => prev.map(s => s.id === skin.id ? { ...s, slim: !s.slim } : s)) }}
                       title="Toggle slim/classic"
                     >
-                      <span className="text-[11px] text-[var(--text-3)]">{skin.slim ? 'Slim' : 'Classic'}</span>
+                      <span className="text-[11px] text-[var(--text-3)]">{skin.slim ? t('skins.slim') : t('skins.classic')}</span>
                     </button>
                     <button
                       className="glass-btn glass-btn-danger p-2"
@@ -139,20 +142,19 @@ export function SkinsPage() {
 
         {/* Right: Preview */}
         <div className="glass p-5">
-          <h3 className="text-[13px] text-[var(--text-2)] mb-4 text-center">Preview</h3>
+          <h3 className="text-[13px] text-[var(--text-2)] mb-4 text-center">{t('skins.preview')}</h3>
           <div className="flex items-center justify-center" style={{ minHeight: 280 }}>
             {activeSkin ? (
               <div className="flex flex-col items-center gap-4">
-                <img
-                  src={activeSkin.data}
-                  alt={activeSkin.name}
-                  className="w-[128px] h-[128px]"
-                  style={{ imageRendering: 'pixelated' }}
+                <SkinRenderer
+                  skinData={activeSkin.data}
+                  slim={activeSkin.slim}
+                  height={200}
                 />
                 <p className="text-[13px] font-medium">{activeSkin.name}</p>
                 <div className="flex items-center gap-2 text-[var(--text-2)]">
                   <Check size={14} />
-                  <span className="text-[12px]">Equipped</span>
+                  <span className="text-[12px]">{t('skins.equipped')}</span>
                 </div>
               </div>
             ) : activeAccount ? (
@@ -163,11 +165,11 @@ export function SkinsPage() {
                   className="h-[200px]"
                   style={{ imageRendering: 'pixelated' }}
                 />
-                <p className="text-[12px] text-[var(--text-3)]">Current skin</p>
+                <p className="text-[12px] text-[var(--text-3)]">{t('skins.currentSkin')}</p>
               </div>
             ) : (
               <div className="text-center">
-                <p className="text-[13px] text-[var(--text-3)]">Login to see your skin</p>
+                <p className="text-[13px] text-[var(--text-3)]">{t('skins.loginToSee')}</p>
               </div>
             )}
           </div>
