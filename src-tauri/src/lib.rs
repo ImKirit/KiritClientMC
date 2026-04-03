@@ -22,39 +22,77 @@ async fn ms_auth_start(_state: State<'_, AppState>) -> Result<microsoft::DeviceC
     microsoft::request_device_code(&client).await
 }
 
+/// Poll only — returns MS token when user has authenticated, null while pending
 #[tauri::command]
-async fn ms_auth_poll(device_code: String, state: State<'_, AppState>) -> Result<Option<microsoft::AuthResult>, String> {
+async fn ms_auth_poll(device_code: String) -> Result<Option<microsoft::MsTokenResponse>, String> {
     let client = reqwest::Client::new();
-    let token = microsoft::poll_for_token(&client, &device_code).await?;
+    microsoft::poll_for_token(&client, &device_code).await
+}
 
-    match token {
-        Some(ms_token) => {
-            let refresh = ms_token.refresh_token.clone().unwrap_or_default();
-            let result = microsoft::full_auth_chain(&client, &ms_token.access_token, &refresh).await?;
+/// Complete the auth chain with a received MS token — step by step with progress events
+#[tauri::command]
+async fn ms_auth_complete(access_token: String, refresh_token: String, app: AppHandle, state: State<'_, AppState>) -> Result<microsoft::AuthResult, String> {
+    let client = reqwest::Client::new();
 
-            // Save account
-            let mut accounts = state.accounts.lock().await;
-            // Deactivate all others
-            for acc in accounts.iter_mut() {
-                acc.is_active = false;
-            }
-            // Remove if exists (re-login)
-            accounts.retain(|a| a.uuid != result.uuid);
-            accounts.push(Account {
-                uuid: result.uuid.clone(),
-                username: result.username.clone(),
-                skin_url: result.skin_url.clone(),
-                access_token: result.access_token.clone(),
-                refresh_token: result.refresh_token.clone(),
-                is_active: true,
-            });
+    // Step 1: Xbox Live
+    app.emit("auth-progress", "Xbox Live...").ok();
+    log::info!("[Auth] Step 1/4: Xbox Live...");
+    let xbox = microsoft::xbox_live_auth(&client, &access_token).await?;
+    let userhash = xbox.display_claims.xui.first()
+        .ok_or("No Xbox user hash found")?
+        .uhs.clone();
+    log::info!("[Auth] Step 1/4: Xbox Live OK");
 
-            save_accounts(&state).await?;
+    // Step 2: XSTS
+    app.emit("auth-progress", "XSTS Authorization...").ok();
+    log::info!("[Auth] Step 2/4: XSTS...");
+    let xsts = microsoft::xsts_auth(&client, &xbox.token).await?;
+    log::info!("[Auth] Step 2/4: XSTS OK");
 
-            Ok(Some(result))
-        },
-        None => Ok(None),
-    }
+    // Step 3: Minecraft Login
+    app.emit("auth-progress", "Minecraft Login...").ok();
+    log::info!("[Auth] Step 3/4: MC Login...");
+    let mc_auth = microsoft::mc_login(&client, &userhash, &xsts.token).await?;
+    log::info!("[Auth] Step 3/4: MC Login OK");
+
+    // Step 4: Minecraft Profile
+    app.emit("auth-progress", "Loading Profile...").ok();
+    log::info!("[Auth] Step 4/4: MC Profile...");
+    let profile = microsoft::get_mc_profile(&client, &mc_auth.access_token).await?;
+    let skin_url = profile.skins.as_ref()
+        .and_then(|s| s.first())
+        .map(|s| s.url.clone());
+    log::info!("[Auth] Step 4/4: Profile OK — {} ({})", profile.name, profile.id);
+
+    let result = microsoft::AuthResult {
+        uuid: profile.id,
+        username: profile.name,
+        skin_url,
+        access_token: mc_auth.access_token,
+        refresh_token,
+    };
+
+    // Save account — scope the lock so it's dropped before save_accounts
+    {
+        let mut accounts = state.accounts.lock().await;
+        for acc in accounts.iter_mut() {
+            acc.is_active = false;
+        }
+        accounts.retain(|a| a.uuid != result.uuid);
+        accounts.push(Account {
+            uuid: result.uuid.clone(),
+            username: result.username.clone(),
+            skin_url: result.skin_url.clone(),
+            access_token: result.access_token.clone(),
+            refresh_token: result.refresh_token.clone(),
+            is_active: true,
+        });
+    } // lock dropped here
+
+    save_accounts(&state).await?;
+    app.emit("auth-progress", "Done!").ok();
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -447,13 +485,19 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
         }
     }
 
-    // Auto-install KiritClient mod into instance
+    // Auto-install KiritClient mod + Fabric API into instance
     if needs_fabric {
         let mods_dir = game_dir.join("mods");
         tokio::fs::create_dir_all(&mods_dir).await.ok();
-        let target_jar = mods_dir.join("kiritclient-mod.jar");
 
-        // Copy bundled mod from app resources
+        emit_progress(&app, serde_json::json!({
+            "stage": "mods",
+            "message": "Installing KiritClient...",
+            "progress": 0.88
+        }));
+
+        // 1. Copy bundled KiritClient mod
+        let target_jar = mods_dir.join("kiritclient-mod.jar");
         let resource_path = app.path().resource_dir()
             .map_err(|e| e.to_string())?
             .join("resources")
@@ -465,8 +509,62 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
             } else {
                 log::info!("[Launch] KiritClient mod installed to {:?}", target_jar);
             }
+        }
+
+        // 2. Download Fabric API if not already present
+        let has_fabric_api = if let Ok(entries) = std::fs::read_dir(&mods_dir) {
+            entries.filter_map(|e| e.ok())
+                .any(|e| e.file_name().to_string_lossy().starts_with("fabric-api"))
         } else {
-            log::warn!("[Launch] KiritClient mod not found at {:?}", resource_path);
+            false
+        };
+
+        if !has_fabric_api {
+            emit_progress(&app, serde_json::json!({
+                "stage": "mods",
+                "message": "Downloading Fabric API...",
+                "progress": 0.90
+            }));
+
+            log::info!("[Launch] Downloading Fabric API for MC {}...", profile.mc_version);
+
+            // Query Modrinth for the right Fabric API version
+            let modrinth_url = format!(
+                "https://api.modrinth.com/v2/project/P7dR8mSH/version?game_versions=[\"{}\"]&loaders=[\"fabric\"]",
+                profile.mc_version
+            );
+            match client.get(&modrinth_url)
+                .header("User-Agent", "KiritClient/0.1.0")
+                .timeout(std::time::Duration::from_secs(15))
+                .send().await
+            {
+                Ok(resp) => {
+                    if let Ok(versions) = resp.json::<Vec<serde_json::Value>>().await {
+                        if let Some(version) = versions.first() {
+                            if let Some(file) = version.get("files")
+                                .and_then(|f| f.as_array())
+                                .and_then(|f| f.iter().find(|f| f.get("primary").and_then(|p| p.as_bool()).unwrap_or(false)))
+                                .or_else(|| version.get("files").and_then(|f| f.as_array()).and_then(|f| f.first()))
+                            {
+                                let url = file.get("url").and_then(|u| u.as_str()).unwrap_or("");
+                                let filename = file.get("filename").and_then(|f| f.as_str()).unwrap_or("fabric-api.jar");
+
+                                if !url.is_empty() {
+                                    let target = mods_dir.join(filename);
+                                    if let Err(e) = download::download_if_missing(&client, url, &target, None).await {
+                                        log::warn!("[Launch] Failed to download Fabric API: {}", e);
+                                    } else {
+                                        log::info!("[Launch] Fabric API installed: {}", filename);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                Err(e) => log::warn!("[Launch] Failed to query Modrinth for Fabric API: {}", e),
+            }
+        } else {
+            log::info!("[Launch] Fabric API already present in mods folder");
         }
     }
 
@@ -972,6 +1070,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ms_auth_start,
             ms_auth_poll,
+            ms_auth_complete,
             get_accounts,
             remove_account,
             set_active_account,

@@ -3,17 +3,28 @@ import { Plus, Trash2, Check, Copy, ExternalLink, AlertTriangle } from 'lucide-r
 import { useAuthStore } from '../stores/authStore'
 import { Modal } from '../components/ui/Modal'
 import { useI18n } from '../lib/i18n'
+import { listen } from '@tauri-apps/api/event'
 
 export function AccountsPage() {
-  const { accounts, loginFlow, isLoading, loadAccounts, startLogin, pollLogin, removeAccount, setActiveAccount, cancelLogin } = useAuthStore()
+  const { accounts, loginFlow, authStage, isLoading, loadAccounts, startLogin, pollLogin, completeLogin, removeAccount, setActiveAccount, cancelLogin } = useAuthStore()
   const { t } = useI18n()
   const [copied, setCopied] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [authProgress, setAuthProgress] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pollingBusy = useRef(false)
 
   useEffect(() => {
     loadAccounts()
+  }, [])
+
+  // Listen for auth progress events from Rust backend
+  useEffect(() => {
+    const unlisten = listen<string>('auth-progress', (event) => {
+      console.log('[Auth] Progress:', event.payload)
+      setAuthProgress(event.payload)
+    })
+    return () => { unlisten.then(fn => fn()) }
   }, [])
 
   useEffect(() => {
@@ -24,28 +35,43 @@ export function AccountsPage() {
       if (pollRef.current) clearInterval(pollRef.current)
       pollingBusy.current = false
 
+      console.log('[Auth] Starting poll interval...')
       pollRef.current = setInterval(async () => {
         // Skip if a poll request is already in flight
         if (pollingBusy.current) return
         pollingBusy.current = true
+        console.log('[Auth] Polling...')
 
         try {
-          const result = await pollLogin()
-          if (result) {
-            // Login succeeded — stop polling
+          // Step 1: Quick poll — just checks if user authenticated
+          const msToken = await pollLogin()
+          if (msToken) {
+            // Stop polling immediately
+            console.log('[Auth] MS Token received! Completing auth chain...')
             if (pollRef.current) {
               clearInterval(pollRef.current)
               pollRef.current = null
             }
+
+            // Step 2: Complete auth chain (separate call, won't block future polls)
+            try {
+              const result = await completeLogin(msToken)
+              console.log('[Auth] Login complete:', result.username)
+            } catch (e) {
+              console.error('[Auth] Auth chain error:', e)
+              const msg = e instanceof Error ? e.message : String(e)
+              setAuthError(msg)
+            }
+          } else {
+            console.log('[Auth] Still pending...')
           }
         } catch (e) {
-          // Stop polling on error
+          console.error('[Auth] Poll error:', e)
           if (pollRef.current) {
             clearInterval(pollRef.current)
             pollRef.current = null
           }
           const msg = e instanceof Error ? e.message : String(e)
-          // Ignore "already been used" — means auth chain completed
           if (!msg.includes('already been used')) {
             setAuthError(msg)
           }
@@ -125,7 +151,9 @@ export function AccountsPage() {
 
           <div className="flex items-center gap-2 justify-center mb-5">
             <div className="w-2 h-2 rounded-full bg-white/20 animate-pulse" />
-            <p className="text-[13px] text-[var(--text-3)]">{t('accounts.waiting')}</p>
+            <p className="text-[13px] text-[var(--text-3)]">
+              {authProgress || authStage || t('accounts.waiting')}
+            </p>
           </div>
 
           <button className="glass-btn w-full" onClick={cancelLogin}>

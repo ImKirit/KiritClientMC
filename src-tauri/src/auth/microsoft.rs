@@ -102,6 +102,8 @@ pub async fn request_device_code(client: &Client) -> Result<DeviceCodeResponse, 
 }
 
 pub async fn poll_for_token(client: &Client, device_code: &str) -> Result<Option<MsTokenResponse>, String> {
+    log::info!("[Auth] Polling for token (device_code={}...)", &device_code[..device_code.len().min(8)]);
+
     let resp = client
         .post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
         .form(&[
@@ -109,6 +111,7 @@ pub async fn poll_for_token(client: &Client, device_code: &str) -> Result<Option
             ("client_id", CLIENT_ID),
             ("device_code", device_code),
         ])
+        .timeout(std::time::Duration::from_secs(15))
         .send()
         .await
         .map_err(|e| format!("Failed to poll for token: {}", e))?;
@@ -116,7 +119,10 @@ pub async fn poll_for_token(client: &Client, device_code: &str) -> Result<Option
     let status = resp.status();
     let text = resp.text().await.map_err(|e| format!("Failed to read response: {}", e))?;
 
+    log::info!("[Auth] Poll response HTTP {}: {}", status.as_u16(), &text[..text.len().min(200)]);
+
     if status.is_success() {
+        log::info!("[Auth] Token received! Starting full auth chain...");
         let token: MsTokenResponse = serde_json::from_str(&text)
             .map_err(|e| format!("Failed to parse token: {}", e))?;
         Ok(Some(token))
@@ -126,6 +132,7 @@ pub async fn poll_for_token(client: &Client, device_code: &str) -> Result<Option
             error_description: None,
         });
         if err.error == "authorization_pending" || err.error == "slow_down" {
+            log::debug!("[Auth] Still waiting...");
             Ok(None) // Still waiting
         } else if err.error == "expired_token" {
             Err("Login expired. Please try again.".to_string())
@@ -175,6 +182,7 @@ pub async fn xbox_live_auth(client: &Client, ms_token: &str) -> Result<XboxLiveR
         .post("https://user.auth.xboxlive.com/user/authenticate")
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
+        .timeout(std::time::Duration::from_secs(30))
         .json(&body)
         .send()
         .await
@@ -205,6 +213,7 @@ pub async fn xsts_auth(client: &Client, xbox_token: &str) -> Result<XboxLiveResp
         .post("https://xsts.auth.xboxlive.com/xsts/authorize")
         .header("Content-Type", "application/json")
         .header("Accept", "application/json")
+        .timeout(std::time::Duration::from_secs(30))
         .json(&body)
         .send()
         .await
@@ -242,6 +251,7 @@ pub async fn mc_login(client: &Client, userhash: &str, xsts_token: &str) -> Resu
     let resp = client
         .post("https://api.minecraftservices.com/authentication/login_with_xbox")
         .header("Content-Type", "application/json")
+        .timeout(std::time::Duration::from_secs(30))
         .json(&body)
         .send()
         .await
@@ -262,6 +272,7 @@ pub async fn get_mc_profile(client: &Client, mc_token: &str) -> Result<McProfile
     let resp = client
         .get("https://api.minecraftservices.com/minecraft/profile")
         .header("Authorization", format!("Bearer {}", mc_token))
+        .timeout(std::time::Duration::from_secs(30))
         .send()
         .await
         .map_err(|e| format!("Failed to get MC profile: {}", e))?;

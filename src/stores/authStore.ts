@@ -18,6 +18,13 @@ export interface DeviceCodeResponse {
   interval: number
 }
 
+export interface MsTokenResponse {
+  access_token: string
+  refresh_token: string | null
+  token_type: string
+  expires_in: number
+}
+
 export interface AuthResult {
   uuid: string
   username: string
@@ -29,6 +36,7 @@ export interface AuthResult {
 interface AuthStore {
   accounts: Account[]
   isLoading: boolean
+  authStage: string | null
   loginFlow: {
     userCode: string
     verificationUri: string
@@ -37,7 +45,8 @@ interface AuthStore {
 
   loadAccounts: () => Promise<void>
   startLogin: () => Promise<void>
-  pollLogin: () => Promise<AuthResult | null>
+  pollLogin: () => Promise<MsTokenResponse | null>
+  completeLogin: (msToken: MsTokenResponse) => Promise<AuthResult>
   removeAccount: (uuid: string) => Promise<void>
   setActiveAccount: (uuid: string) => Promise<void>
   cancelLogin: () => void
@@ -47,6 +56,7 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set, get) => ({
   accounts: [],
   isLoading: false,
+  authStage: null,
   loginFlow: null,
 
   loadAccounts: async () => {
@@ -55,7 +65,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   startLogin: async () => {
-    set({ isLoading: true })
+    set({ isLoading: true, authStage: null })
     try {
       const resp = await invoke<DeviceCodeResponse>('ms_auth_start')
       set({
@@ -72,20 +82,29 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  // Only polls for MS token — returns quickly
   pollLogin: async () => {
     const flow = get().loginFlow
     if (!flow) return null
+    const result = await invoke<MsTokenResponse | null>('ms_auth_poll', {
+      deviceCode: flow.deviceCode,
+    })
+    return result
+  },
+
+  // Separate step: complete the auth chain (Xbox → XSTS → MC → Profile)
+  completeLogin: async (msToken: MsTokenResponse) => {
+    set({ authStage: 'Authenticating with Xbox Live...' })
     try {
-      const result = await invoke<AuthResult | null>('ms_auth_poll', {
-        deviceCode: flow.deviceCode,
+      const result = await invoke<AuthResult>('ms_auth_complete', {
+        accessToken: msToken.access_token,
+        refreshToken: msToken.refresh_token || '',
       })
-      if (result) {
-        set({ loginFlow: null })
-        await get().loadAccounts()
-      }
+      set({ loginFlow: null, authStage: null })
+      await get().loadAccounts()
       return result
     } catch (e) {
-      set({ loginFlow: null })
+      set({ loginFlow: null, authStage: null })
       throw e
     }
   },
@@ -101,7 +120,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   cancelLogin: () => {
-    set({ loginFlow: null })
+    set({ loginFlow: null, authStage: null })
   },
 
   getActiveAccount: () => {
