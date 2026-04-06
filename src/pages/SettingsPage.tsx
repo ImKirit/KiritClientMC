@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, HardDrive, Palette, Sparkles, Globe, MousePointer2 } from 'lucide-react'
-import { useSettingsStore } from '../stores/settingsStore'
+import { RefreshCw, HardDrive, Palette, Sparkles, Globe, MousePointer2, Zap, X, Plus } from 'lucide-react'
+import { useSettingsStore, type StandardPackage } from '../stores/settingsStore'
 import { useI18n, type Locale } from '../lib/i18n'
 
 const bgPresets = [
@@ -284,7 +284,7 @@ export function SettingsPage() {
       </section>
 
       {/* Behavior */}
-      <section className="glass p-7">
+      <section className="glass p-7 mb-8">
         <h2 className="font-medium text-[15px] mb-6">Behavior</h2>
 
         <div className="flex flex-col gap-2">
@@ -309,6 +309,102 @@ export function SettingsPage() {
           </label>
         </div>
       </section>
+
+      {/* Standard Packages */}
+      <section className="glass p-7">
+        <div className="flex items-center gap-2 mb-2">
+          <Zap size={16} className="text-[var(--text-2)]" />
+          <h2 className="font-medium text-[15px]">{t('settings.standards')}</h2>
+        </div>
+        <p className="text-[12px] text-[var(--text-3)] mb-6">{t('settings.standardsDesc')}</p>
+
+        {/* Standard Mods */}
+        <StandardsList
+          label={t('settings.standardMods')}
+          type="mod"
+          packages={settings.standard_packages}
+          onChange={(pkgs) => update({ standard_packages: pkgs })}
+          addLabel={t('settings.addStandard')}
+          placeholder={t('settings.standardTitle')}
+        />
+
+        {/* Standard Texture Packs */}
+        <StandardsList
+          label={t('settings.standardTexturePacks')}
+          type="resourcepack"
+          packages={settings.standard_packages}
+          onChange={(pkgs) => update({ standard_packages: pkgs })}
+          addLabel={t('settings.addStandard')}
+          placeholder={t('settings.standardTitle')}
+        />
+
+        {/* Standard Shaders */}
+        <StandardsList
+          label={t('settings.standardShaders')}
+          type="shader"
+          packages={settings.standard_packages}
+          onChange={(pkgs) => update({ standard_packages: pkgs })}
+          addLabel={t('settings.addStandard')}
+          placeholder={t('settings.standardTitle')}
+        />
+      </section>
+    </div>
+  )
+}
+
+function StandardsList({ label, type, packages, onChange, addLabel, placeholder }: {
+  label: string
+  type: string
+  packages: StandardPackage[]
+  onChange: (pkgs: StandardPackage[]) => void
+  addLabel: string
+  placeholder: string
+}) {
+  const [newTitle, setNewTitle] = useState('')
+  const filtered = packages.filter(p => p.resource_type === type)
+
+  const add = () => {
+    if (!newTitle.trim()) return
+    onChange([...packages, { title: newTitle.trim(), resource_type: type }])
+    setNewTitle('')
+  }
+
+  const remove = (title: string) => {
+    onChange(packages.filter(p => !(p.resource_type === type && p.title === title)))
+  }
+
+  return (
+    <div className="mb-6 last:mb-0">
+      <label className="text-[13px] text-[var(--text-2)] mb-3 block">{label} ({filtered.length})</label>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {filtered.map(pkg => (
+          <span
+            key={pkg.title}
+            className="inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full bg-white/[0.06] text-[var(--text-2)]"
+          >
+            {pkg.title}
+            <button
+              className="hover:text-red-400 transition-colors"
+              onClick={() => remove(pkg.title)}
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          className="glass-input flex-1 text-[13px]"
+          placeholder={placeholder}
+          value={newTitle}
+          onChange={e => setNewTitle(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && add()}
+        />
+        <button className="glass-btn text-[13px] px-4" onClick={add}>
+          <Plus size={14} />
+          {addLabel}
+        </button>
+      </div>
     </div>
   )
 }

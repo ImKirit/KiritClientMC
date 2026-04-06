@@ -68,12 +68,65 @@ pub struct InstanceResource {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StandardPackage {
+    pub title: String,
+    pub resource_type: String, // "mod", "resourcepack", "shader"
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub default_memory_mb: u32,
     pub download_threads: u32,
     pub close_on_launch: bool,
     pub show_console: bool,
     pub java_paths: Vec<JavaInstallation>,
+    #[serde(default = "default_standard_packages")]
+    pub standard_packages: Vec<StandardPackage>,
+}
+
+fn default_standard_packages() -> Vec<StandardPackage> {
+    vec![
+        // Mods
+        StandardPackage { title: "Essential".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Mouse Tweaks".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Zoomify".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Sodium".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Iris Shaders".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Gamma Utils".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Simple Voice Chat".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Mod Menu".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Spark".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Distant Horizons".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Better Hurtcam".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Bundles Beyond".into(), resource_type: "mod".into() },
+        StandardPackage { title: "ShulkerBoxTooltip".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Jade".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Armor HUD".into(), resource_type: "mod".into() },
+        StandardPackage { title: "NoFog".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Sound Controller".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Tier Tagger".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Who am I".into(), resource_type: "mod".into() },
+        StandardPackage { title: "WorldEdit".into(), resource_type: "mod".into() },
+        StandardPackage { title: "Bactromod".into(), resource_type: "mod".into() },
+        StandardPackage { title: "AutoReconnect".into(), resource_type: "mod".into() },
+        // Texture Packs
+        StandardPackage { title: "No Vault Sides".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Railguns Redstone Pack".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Re:Covered".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Red Powder Snow".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Rubiks Anti-Rotation".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Small Totems".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Small Totem Pop".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Theones Eating Animation".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "No Particles".into(), resource_type: "resourcepack".into() },
+        StandardPackage { title: "Transparent Inventorys".into(), resource_type: "resourcepack".into() },
+        // Shader Packs
+        StandardPackage { title: "Bliss Shader".into(), resource_type: "shader".into() },
+        StandardPackage { title: "BSL Shaders".into(), resource_type: "shader".into() },
+        StandardPackage { title: "Complementary Shaders".into(), resource_type: "shader".into() },
+        StandardPackage { title: "Complementary Reimagined".into(), resource_type: "shader".into() },
+        StandardPackage { title: "Photon Shader".into(), resource_type: "shader".into() },
+    ]
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,6 +144,7 @@ impl Default for Settings {
             close_on_launch: false,
             show_console: false,
             java_paths: vec![],
+            standard_packages: default_standard_packages(),
         }
     }
 }

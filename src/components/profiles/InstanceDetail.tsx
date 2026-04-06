@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Package, Plus, X, Download, ToggleLeft, ToggleRight, ChevronLeft, Clock, HardDrive, Gamepad2, Settings, Info, Image } from 'lucide-react'
+import { Search, Package, Plus, X, Download, ToggleLeft, ToggleRight, ChevronLeft, Clock, HardDrive, Gamepad2, Settings, Info, Image, Zap } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
 import type { Profile, LoaderType } from '../../stores/profileStore'
 import { useProfileStore } from '../../stores/profileStore'
 import { Modal } from '../ui/Modal'
 import { useI18n } from '../../lib/i18n'
+
+interface StandardPackage {
+  title: string
+  resource_type: string
+}
 
 type ResourceType = 'mod' | 'resourcepack' | 'shader'
 type ViewTab = ResourceType | 'settings'
@@ -63,6 +68,9 @@ export function InstanceDetail({ profile: initialProfile, onBack }: InstanceDeta
   const [modLatestVersion, setModLatestVersion] = useState<string>('')
   const [settingsSaved, setSettingsSaved] = useState(false)
   const [editProfile, setEditProfile] = useState(initialProfile)
+  const [standardsInstalling, setStandardsInstalling] = useState(false)
+  const [standardsProgress, setStandardsProgress] = useState({ current: 0, total: 0 })
+  const [standardsDone, setStandardsDone] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Load persisted resources + versions on mount
@@ -235,6 +243,91 @@ export function InstanceDetail({ profile: initialProfile, onBack }: InstanceDeta
     ))
   }
 
+  const installStandards = async (type: ResourceType) => {
+    setStandardsInstalling(true)
+    setStandardsDone(false)
+    try {
+      const settings = await invoke<any>('get_settings')
+      const standards: StandardPackage[] = (settings.standard_packages || []).filter(
+        (p: StandardPackage) => p.resource_type === type
+      )
+      if (standards.length === 0) {
+        setStandardsInstalling(false)
+        return
+      }
+      setStandardsProgress({ current: 0, total: standards.length })
+
+      const tab = tabKeys.find(t => t.type === type)!
+      let currentResources = [...installed]
+
+      for (let i = 0; i < standards.length; i++) {
+        const pkg = standards[i]
+        setStandardsProgress({ current: i + 1, total: standards.length })
+
+        // Skip if already installed
+        if (currentResources.some(r => r.title.toLowerCase() === pkg.title.toLowerCase())) continue
+
+        // Search Modrinth for this package
+        try {
+          const facets: string[][] = [
+            [`versions:${profile.mc_version}`],
+            [`project_type:${tab.modrinthType}`],
+          ]
+          if (type === 'mod' && profile.loader_type !== 'vanilla') {
+            facets.push([`categories:${profile.loader_type}`])
+          }
+          const params = new URLSearchParams({
+            query: pkg.title,
+            limit: '1',
+            facets: JSON.stringify(facets),
+          })
+          const res = await fetch(`https://api.modrinth.com/v2/search?${params}`, {
+            headers: { 'User-Agent': 'KiritClient/0.1.0' }
+          })
+          const data = await res.json()
+          if (data.hits && data.hits.length > 0) {
+            const project = data.hits[0]
+            if (currentResources.some(r => r.slug === project.slug)) continue
+
+            // Resolve version
+            let versionId: string | null = null
+            let fileName: string | null = null
+            let fileUrl: string | null = null
+            try {
+              const version = await invoke<any>('resolve_modrinth_version', {
+                slug: project.slug,
+                mcVersion: profile.mc_version,
+                loaderType: profile.loader_type,
+              })
+              if (version?.files?.length > 0) {
+                const primary = version.files.find((f: any) => f.primary) || version.files[0]
+                versionId = version.id
+                fileName = primary.filename
+                fileUrl = primary.url
+              }
+            } catch { /* continue without version info */ }
+
+            currentResources = [...currentResources, {
+              slug: project.slug,
+              title: project.title,
+              icon_url: project.icon_url,
+              resource_type: type,
+              enabled: true,
+              version_id: versionId,
+              file_name: fileName,
+              file_url: fileUrl,
+            }]
+          }
+        } catch { /* skip this package */ }
+      }
+
+      persistResources(currentResources)
+      setStandardsDone(true)
+      setTimeout(() => setStandardsDone(false), 2000)
+    } catch { /* ignore */ }
+    setStandardsInstalling(false)
+  }
+
   const filteredInstalled = installed.filter(r => r.resource_type === activeTab)
   const isAdded = (slug: string) => installed.some(r => r.slug === slug)
 
@@ -328,13 +421,30 @@ export function InstanceDetail({ profile: initialProfile, onBack }: InstanceDeta
         </button>
         <div className="flex-1" />
         {activeTab !== 'settings' && (
-          <button
-            className="glass-btn glass-btn-primary text-[13px] px-4 py-2.5"
-            onClick={() => setShowSearch(!showSearch)}
-          >
-            <Plus size={14} />
-            {t('instances.add', { type: t(tabKeys.find(tk => tk.type === activeTab)!.labelKey) })}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="glass-btn text-[13px] px-4 py-2.5"
+              disabled={standardsInstalling}
+              onClick={() => installStandards(activeTab)}
+            >
+              <Zap size={14} />
+              {standardsInstalling
+                ? t('instances.installingStandards', {
+                    current: String(standardsProgress.current),
+                    total: String(standardsProgress.total),
+                  })
+                : standardsDone
+                  ? t('instances.standardsInstalled')
+                  : t('instances.installStandards')}
+            </button>
+            <button
+              className="glass-btn glass-btn-primary text-[13px] px-4 py-2.5"
+              onClick={() => setShowSearch(!showSearch)}
+            >
+              <Plus size={14} />
+              {t('instances.add', { type: t(tabKeys.find(tk => tk.type === activeTab)!.labelKey) })}
+            </button>
+          </div>
         )}
       </div>
 

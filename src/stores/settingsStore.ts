@@ -7,12 +7,18 @@ export interface JavaInstallation {
   is_auto: boolean
 }
 
+export interface StandardPackage {
+  title: string
+  resource_type: string
+}
+
 export interface Settings {
   default_memory_mb: number
   download_threads: number
   close_on_launch: boolean
   show_console: boolean
   java_paths: JavaInstallation[]
+  standard_packages: StandardPackage[]
 }
 
 interface SettingsStore {
@@ -32,6 +38,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     close_on_launch: false,
     show_console: false,
     java_paths: [],
+    standard_packages: [],
   },
   detectedJava: [],
   isLoading: false,

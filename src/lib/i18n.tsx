@@ -65,6 +65,19 @@ const translations: Record<Locale, Record<string, string>> = {
     'instances.updateAll': 'Update All',
     'instances.update': 'Update',
     'instances.upToDate': 'Up to date',
+    'instances.installStandards': 'Install Standards',
+    'instances.installingStandards': 'Installing... ({current}/{total})',
+    'instances.standardsInstalled': 'Standards installed!',
+    'instances.standardsNone': 'No standards configured for {type}',
+
+    // Settings - Standards
+    'settings.standards': 'Standard Packages',
+    'settings.standardsDesc': 'Configure which mods, texture packs, and shaders are installed with "Install Standards".',
+    'settings.standardMods': 'Standard Mods',
+    'settings.standardTexturePacks': 'Standard Texture Packs',
+    'settings.standardShaders': 'Standard Shaders',
+    'settings.addStandard': 'Add',
+    'settings.standardTitle': 'Package name',
 
     // Skins
     'skins.title': 'Skins',
@@ -207,6 +220,19 @@ const translations: Record<Locale, Record<string, string>> = {
     'instances.updateAll': 'Alle aktualisieren',
     'instances.update': 'Aktualisieren',
     'instances.upToDate': 'Aktuell',
+    'instances.installStandards': 'Standards installieren',
+    'instances.installingStandards': 'Installiere... ({current}/{total})',
+    'instances.standardsInstalled': 'Standards installiert!',
+    'instances.standardsNone': 'Keine Standards konfiguriert für {type}',
+
+    // Settings - Standards
+    'settings.standards': 'Standard-Pakete',
+    'settings.standardsDesc': 'Konfiguriere welche Mods, Texturenpakete und Shader mit "Standards installieren" installiert werden.',
+    'settings.standardMods': 'Standard-Mods',
+    'settings.standardTexturePacks': 'Standard-Texturenpakete',
+    'settings.standardShaders': 'Standard-Shader',
+    'settings.addStandard': 'Hinzufügen',
+    'settings.standardTitle': 'Paketname',
 
     // Skins
     'skins.title': 'Skins',
