@@ -7,6 +7,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class KiritConfig {
 
@@ -33,6 +35,27 @@ public class KiritConfig {
 
     // Cape API
     public String capeApiUrl = "https://imkirit.dev/kc-api";
+
+    // ESP
+    public boolean espEnabled = false;
+    public boolean entityEspEnabled = true;
+    public boolean blockEspEnabled = true;
+    public boolean itemEspEnabled = true;
+    public boolean storageEspEnabled = true;
+    public boolean tracerEnabled = false;
+    public int espScanRange = 32;
+    public int espBlockRefreshTicks = 10;
+    public Set<String> espSelectedBlocks = new LinkedHashSet<>(Set.of(
+            "minecraft:diamond_ore", "minecraft:deepslate_diamond_ore",
+            "minecraft:chest", "minecraft:spawner", "minecraft:ancient_debris"
+    ));
+    public Set<String> espSelectedEntities = new LinkedHashSet<>(Set.of(
+            "minecraft:player", "minecraft:zombie", "minecraft:creeper",
+            "minecraft:skeleton", "minecraft:enderman", "minecraft:item"
+    ));
+
+    // Fullbright
+    public boolean fullbrightEnabled = false;
 
     private static Path getConfigPath() {
         return FabricLoader.getInstance().getConfigDir().resolve("kiritclient.json");

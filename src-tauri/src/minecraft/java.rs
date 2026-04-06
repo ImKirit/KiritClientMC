@@ -1,5 +1,10 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub fn detect_java_installations() -> Vec<(String, String)> {
     let mut installations = Vec::new();
@@ -49,7 +54,11 @@ pub fn detect_java_installations() -> Vec<(String, String)> {
     }
 
     // Check PATH
-    if let Ok(output) = Command::new("where").arg("java").output() {
+    let mut where_cmd = Command::new("where");
+    where_cmd.arg("java");
+    #[cfg(target_os = "windows")]
+    where_cmd.creation_flags(CREATE_NO_WINDOW);
+    if let Ok(output) = where_cmd.output() {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             for line in stdout.lines() {
@@ -67,10 +76,11 @@ pub fn detect_java_installations() -> Vec<(String, String)> {
 }
 
 pub fn get_java_version(java_path: &Path) -> Option<String> {
-    let output = Command::new(java_path)
-        .arg("-version")
-        .output()
-        .ok()?;
+    let mut cmd = Command::new(java_path);
+    cmd.arg("-version");
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let output = cmd.output().ok()?;
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     // Parse version from: java version "1.8.0_xxx" or openjdk version "21.0.x"

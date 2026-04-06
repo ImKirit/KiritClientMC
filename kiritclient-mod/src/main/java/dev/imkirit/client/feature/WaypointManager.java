@@ -4,13 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import dev.imkirit.client.KiritClientMod;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Vec3d;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -27,14 +21,14 @@ public class WaypointManager {
     private Path waypointsFile;
 
     public WaypointManager() {
-        // Register world render event for beam rendering
-        WorldRenderEvents.AFTER_TRANSLUCENT.register(this::onWorldRender);
+        // Rendering hook will be added when Fabric API rendering events are available
+        KiritClientMod.LOGGER.info("[KiritClient] WaypointManager initialized (data only)");
     }
 
     public static class Waypoint {
         public String name;
         public int x, y, z;
-        public int color; // 0xRRGGBB
+        public int color;
         public boolean visible = true;
 
         public Waypoint() {}
@@ -105,30 +99,6 @@ public class WaypointManager {
         } catch (IOException e) {
             KiritClientMod.LOGGER.error("[KiritClient] Failed to save waypoints: {}", e.getMessage());
         }
-    }
-
-    private void onWorldRender(WorldRenderContext context) {
-        if (!KiritClientMod.getInstance().getConfig().waypointsEnabled) return;
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || client.world == null) return;
-
-        int maxDist = KiritClientMod.getInstance().getConfig().waypointRenderDistance;
-        Vec3d cameraPos = context.camera().getPos();
-
-        for (Waypoint wp : waypoints) {
-            if (!wp.visible) continue;
-
-            double dist = cameraPos.distanceTo(new Vec3d(wp.x + 0.5, wp.y + 0.5, wp.z + 0.5));
-            if (dist > maxDist) continue;
-
-            // Render beam and label
-            renderWaypointBeam(context, wp, cameraPos, dist);
-        }
-    }
-
-    private void renderWaypointBeam(WorldRenderContext context, Waypoint wp, Vec3d cameraPos, double dist) {
-        // Beam and label rendering will be implemented with proper vertex buffers
-        // For now this is the hook point — full rendering in next iteration
     }
 
     private int generateColor(int index) {

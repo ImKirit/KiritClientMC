@@ -11,6 +11,8 @@ pub struct Account {
     pub skin_url: Option<String>,
     pub access_token: String,
     pub refresh_token: String,
+    #[serde(default)]
+    pub xuid: String,
     pub is_active: bool,
 }
 

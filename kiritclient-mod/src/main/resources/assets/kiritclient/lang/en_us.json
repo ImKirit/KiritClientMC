@@ -2,5 +2,7 @@
   "category.kiritclient": "KiritClient",
   "key.kiritclient.settings": "Open Settings",
   "key.kiritclient.waypoint": "Add Waypoint",
-  "key.kiritclient.hitbox": "Toggle Hitboxes"
+  "key.kiritclient.hitbox": "Toggle Hitboxes",
+  "key.kiritclient.esp": "Toggle ESP",
+  "key.kiritclient.fullbright": "Toggle Fullbright"
 }

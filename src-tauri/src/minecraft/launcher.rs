@@ -1,8 +1,13 @@
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use tokio::process::Command;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use super::versions::VersionJson;
 use super::libraries::build_classpath;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub struct LaunchConfig {
     pub java_path: String,
@@ -14,6 +19,8 @@ pub struct LaunchConfig {
     pub username: String,
     pub uuid: String,
     pub access_token: String,
+    pub xuid: String,
+    pub client_id: String,
     pub version_name: String,
     pub assets_dir: PathBuf,
     pub asset_index: String,
@@ -30,8 +37,10 @@ pub fn build_game_arguments(version: &VersionJson, config: &LaunchConfig) -> Vec
         ("game_directory", config.game_dir.to_string_lossy().to_string()),
         ("assets_root", config.assets_dir.to_string_lossy().to_string()),
         ("assets_index_name", config.asset_index.clone()),
-        ("auth_uuid", config.uuid.replace("-", "")),
+        ("auth_uuid", format_uuid_with_dashes(&config.uuid)),
         ("auth_access_token", config.access_token.clone()),
+        ("auth_xuid", config.xuid.clone()),
+        ("clientid", config.client_id.clone()),
         ("user_type", "msa".to_string()),
         ("version_type", version.version_type.clone()),
         ("resolution_width", config.resolution_width.to_string()),
@@ -47,6 +56,13 @@ pub fn build_game_arguments(version: &VersionJson, config: &LaunchConfig) -> Vec
                     },
                     serde_json::Value::Object(obj) => {
                         // Conditional arguments - check rules
+                        // Skip args with feature rules (demo, quick play, etc.) since we don't enable them
+                        if let Some(serde_json::Value::Array(rules)) = obj.get("rules") {
+                            let has_features = rules.iter().any(|r| r.get("features").is_some());
+                            if has_features {
+                                continue;
+                            }
+                        }
                         if let Some(serde_json::Value::Array(values)) = obj.get("value") {
                             for v in values {
                                 if let Some(s) = v.as_str() {
@@ -145,6 +161,18 @@ pub fn build_jvm_arguments(version: &VersionJson, config: &LaunchConfig, classpa
     args
 }
 
+/// Format a UUID string with dashes (8-4-4-4-12) if not already formatted.
+/// Mojang API returns UUIDs without dashes, but MC expects dashes.
+fn format_uuid_with_dashes(uuid: &str) -> String {
+    let clean = uuid.replace("-", "");
+    if clean.len() == 32 {
+        format!("{}-{}-{}-{}-{}",
+            &clean[0..8], &clean[8..12], &clean[12..16], &clean[16..20], &clean[20..32])
+    } else {
+        uuid.to_string()
+    }
+}
+
 fn substitute_vars(template: &str, vars: &HashMap<&str, String>) -> String {
     let mut result = template.to_string();
     for (key, value) in vars {
@@ -158,6 +186,7 @@ pub async fn launch_minecraft(
     config: &LaunchConfig,
     libraries_dir: &Path,
     client_jar: &Path,
+    app: Option<tauri::AppHandle>,
 ) -> Result<u32, String> {
     let classpath = build_classpath(version, libraries_dir, client_jar);
     let jvm_args = build_jvm_arguments(version, config, &classpath);
@@ -179,6 +208,9 @@ pub async fn launch_minecraft(
         }
     }
     cmd.current_dir(&config.game_dir);
+    // Hide the console window on Windows (MC creates its own GLFW window)
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
 
     log::info!("Launching: {} {} {} {}", config.java_path, jvm_args.join(" "), version.main_class, game_args.join(" "));
 
@@ -190,16 +222,28 @@ pub async fn launch_minecraft(
 
     let pid = child.id().unwrap_or(0);
 
-    // Spawn task to read output
+    // Spawn task to read output and forward errors to frontend
     tokio::spawn(async move {
         let output = child.wait_with_output().await;
         match output {
             Ok(o) => {
+                let stderr = String::from_utf8_lossy(&o.stderr).to_string();
+                let stdout = String::from_utf8_lossy(&o.stdout).to_string();
                 if !o.status.success() {
                     log::error!("Minecraft exited with: {}", o.status);
-                    let stderr = String::from_utf8_lossy(&o.stderr);
                     if !stderr.is_empty() {
-                        log::error!("stderr: {}", stderr);
+                        log::error!("stderr: {}", &stderr[..stderr.len().min(2000)]);
+                    }
+                    if let Some(ref app) = app {
+                        use tauri::Emitter;
+                        let msg = if !stderr.is_empty() {
+                            format!("Minecraft crashed ({}): {}", o.status, &stderr[..stderr.len().min(500)])
+                        } else if !stdout.is_empty() {
+                            format!("Minecraft crashed ({}): {}", o.status, &stdout[stdout.len().saturating_sub(500)..])
+                        } else {
+                            format!("Minecraft crashed with exit code: {}", o.status)
+                        };
+                        app.emit("launch:error", msg).ok();
                     }
                 } else {
                     log::info!("Minecraft exited normally");

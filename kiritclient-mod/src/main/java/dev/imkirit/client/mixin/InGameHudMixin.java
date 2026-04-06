@@ -2,6 +2,7 @@ package dev.imkirit.client.mixin;
 
 import dev.imkirit.client.KiritClientMod;
 import dev.imkirit.client.feature.FriendsManager;
+import dev.imkirit.client.gui.BrandingRenderer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -11,9 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Mixin to render KiritClient HUD elements (friends online, watermark).
- */
 @Mixin(InGameHud.class)
 public abstract class InGameHudMixin {
 
@@ -23,12 +21,12 @@ public abstract class InGameHudMixin {
         if (client.options.hudHidden || client.currentScreen != null) return;
 
         int screenWidth = context.getScaledWindowWidth();
+        int screenHeight = context.getScaledWindowHeight();
 
-        // KiritClient watermark (top-left)
-        context.drawTextWithShadow(client.textRenderer,
-                "KiritClient", 4, 4, 0xAAFFFFFF);
+        // Branding (bottom-right)
+        BrandingRenderer.render(context, screenWidth, screenHeight);
 
-        // Friends online count (top-right, below coordinates)
+        // Friends online count (top-right)
         if (KiritClientMod.getInstance().getConfig().friendsEnabled) {
             FriendsManager friends = KiritClientMod.getInstance().getFriendsManager();
             int online = friends.getOnlineCount();

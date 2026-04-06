@@ -25,10 +25,13 @@ export const useLaunchStore = create<LaunchStore>((set) => ({
   error: null,
 
   launchGame: async (profileId: string) => {
+    console.log('[Launch] Starting launch for profile:', profileId)
     set({ isLaunching: true, progress: null, error: null })
     try {
       await invoke('launch_game', { profileId })
+      console.log('[Launch] invoke returned successfully')
     } catch (e: any) {
+      console.error('[Launch] Error:', e)
       set({ error: String(e), isLaunching: false })
     }
   },
@@ -38,7 +41,7 @@ export const useLaunchStore = create<LaunchStore>((set) => ({
   },
 
   setupListeners: async () => {
-    const unlisten = await listen<LaunchProgress>('launch:progress', (event) => {
+    const unlisten1 = await listen<LaunchProgress>('launch:progress', (event) => {
       set({ progress: event.payload })
       if (event.payload.stage === 'running') {
         setTimeout(() => {
@@ -46,6 +49,10 @@ export const useLaunchStore = create<LaunchStore>((set) => ({
         }, 2000)
       }
     })
-    return unlisten
+    const unlisten2 = await listen<string>('launch:error', (event) => {
+      console.error('[Launch] MC Error:', event.payload)
+      set({ error: event.payload, isLaunching: false })
+    })
+    return () => { unlisten1(); unlisten2() }
   },
 }))

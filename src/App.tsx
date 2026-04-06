@@ -7,6 +7,7 @@ import { ProfilesPage } from './pages/ProfilesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CosmeticsPage } from './pages/CosmeticsPage'
 import { SkinsPage } from './pages/SkinsPage'
+import { ServersPage } from './pages/ServersPage'
 import { useAuthStore } from './stores/authStore'
 import { useProfileStore } from './stores/profileStore'
 import { useSettingsStore } from './stores/settingsStore'
@@ -32,6 +33,7 @@ function App() {
             <Route path="/accounts" element={<AccountsPage />} />
             <Route path="/profiles" element={<ProfilesPage />} />
             <Route path="/skins" element={<SkinsPage />} />
+            <Route path="/servers" element={<ServersPage />} />
             <Route path="/cosmetics" element={<CosmeticsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>

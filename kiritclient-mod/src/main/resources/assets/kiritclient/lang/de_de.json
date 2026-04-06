@@ -2,5 +2,7 @@
   "category.kiritclient": "KiritClient",
   "key.kiritclient.settings": "Einstellungen öffnen",
   "key.kiritclient.waypoint": "Waypoint setzen",
-  "key.kiritclient.hitbox": "Hitboxen umschalten"
+  "key.kiritclient.hitbox": "Hitboxen umschalten",
+  "key.kiritclient.esp": "ESP umschalten",
+  "key.kiritclient.fullbright": "Fullbright umschalten"
 }

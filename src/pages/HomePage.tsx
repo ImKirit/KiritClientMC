@@ -20,11 +20,15 @@ export function HomePage() {
   }, [])
 
   const handlePlay = () => {
+    console.log('[Launch] Play clicked. Account:', activeAccount?.username, 'Profile:', selectedProfile?.name)
     if (!activeAccount) {
       navigate('/accounts')
       return
     }
-    if (!selectedProfile) return
+    if (!selectedProfile) {
+      console.warn('[Launch] No profile selected!')
+      return
+    }
     launchGame(selectedProfile.id)
   }
 

@@ -70,6 +70,7 @@ async fn ms_auth_complete(access_token: String, refresh_token: String, app: AppH
         skin_url,
         access_token: mc_auth.access_token,
         refresh_token,
+        xuid: userhash,
     };
 
     // Save account — scope the lock so it's dropped before save_accounts
@@ -85,6 +86,7 @@ async fn ms_auth_complete(access_token: String, refresh_token: String, app: AppH
             skin_url: result.skin_url.clone(),
             access_token: result.access_token.clone(),
             refresh_token: result.refresh_token.clone(),
+            xuid: result.xuid.clone(),
             is_active: true,
         });
     } // lock dropped here
@@ -284,6 +286,7 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
                         if let Some(acc) = accounts.iter_mut().find(|a| a.uuid == account.uuid) {
                             acc.access_token = result.access_token.clone();
                             acc.refresh_token = result.refresh_token.clone();
+                            acc.xuid = result.xuid.clone();
                         }
                         drop(accounts);
                         save_accounts(&state).await?;
@@ -294,6 +297,7 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
                             skin_url: result.skin_url,
                             access_token: result.access_token,
                             refresh_token: result.refresh_token,
+                            xuid: result.xuid,
                             is_active: true,
                         }
                     },
@@ -425,6 +429,14 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
             "progress": 0.3 + (done as f64 / total as f64) * 0.2
         }));
     }).await?;
+
+    // Extract native DLLs (LWJGL, GLFW, OpenAL etc.)
+    emit_progress(&app, serde_json::json!({
+        "stage": "natives",
+        "message": "Extracting natives...",
+        "progress": 0.52
+    }));
+    libraries::extract_natives(&version_json, &libraries_dir, &natives_dir)?;
 
     // Download assets
     emit_progress(&app, serde_json::json!({
@@ -576,11 +588,15 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
     }));
 
     let java_path = if let Some(ref jp) = profile.java_path {
+        log::info!("[Launch] Using profile Java: {}", jp);
         jp.clone()
     } else {
         let installations = java::detect_java_installations();
-        java::find_java_for_version(&profile.mc_version, &installations)
-            .ok_or("No compatible Java found. Please install Java or set a Java path in profile settings.")?
+        log::info!("[Launch] Detected Java installations: {:?}", installations);
+        let found = java::find_java_for_version(&profile.mc_version, &installations)
+            .ok_or("No compatible Java found. Please install Java or set a Java path in profile settings.")?;
+        log::info!("[Launch] Selected Java for MC {}: {}", profile.mc_version, found);
+        found
     };
 
     // Launch
@@ -600,6 +616,8 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
         username: account.username,
         uuid: account.uuid,
         access_token: account.access_token,
+        xuid: account.xuid,
+        client_id: "c36a9fb6-4f2a-41ff-90bd-ae7cc92031eb".to_string(),
         version_name: profile.mc_version.clone(),
         assets_dir,
         asset_index: version_json.asset_index.id.clone(),
@@ -607,7 +625,7 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
         resolution_height: profile.resolution_height,
     };
 
-    let pid = launcher::launch_minecraft(&version_json, &launch_config, &libraries_dir, &client_jar).await?;
+    let pid = launcher::launch_minecraft(&version_json, &launch_config, &libraries_dir, &client_jar, Some(app.clone())).await?;
 
     emit_progress(&app, serde_json::json!({
         "stage": "running",
@@ -913,6 +931,42 @@ fn add_dir_to_zip(
     Ok(())
 }
 
+// ---- Update Check ----
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+struct UpdateInfo {
+    version: String,
+    download_url: String,
+    changelog: Option<String>,
+}
+
+#[tauri::command]
+async fn check_for_updates() -> Result<Option<UpdateInfo>, String> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .get("https://imkirit.dev/mcclient/version.json")
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await
+        .map_err(|e| format!("Failed to check updates: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Ok(None);
+    }
+
+    let info: UpdateInfo = resp.json().await
+        .map_err(|e| format!("Failed to parse update info: {}", e))?;
+
+    let current = env!("CARGO_PKG_VERSION");
+    if info.version != current {
+        log::info!("[Update] New version available: {} (current: {})", info.version, current);
+        Ok(Some(info))
+    } else {
+        log::info!("[Update] Up to date ({})", current);
+        Ok(None)
+    }
+}
+
 // ---- Helpers ----
 
 fn emit_progress(app: &AppHandle, payload: serde_json::Value) {
@@ -984,6 +1038,7 @@ async fn load_accounts(data_dir: &std::path::Path) -> Vec<Account> {
                 skin_url: a.skin_url,
                 access_token,
                 refresh_token,
+                xuid: String::new(),
                 is_active: a.is_active,
             }
         }).collect();
@@ -1089,6 +1144,7 @@ pub fn run() {
             resolve_modrinth_version,
             import_mrpack,
             export_mrpack,
+            check_for_updates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

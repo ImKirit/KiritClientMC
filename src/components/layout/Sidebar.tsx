@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Users, FolderOpen, Settings, Sparkles, Shirt } from 'lucide-react'
+import { Home, Users, FolderOpen, Settings, Sparkles, Shirt, Globe } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useI18n } from '../../lib/i18n'
 
@@ -8,6 +8,7 @@ const links = [
   { to: '/accounts', icon: Users, i18nKey: 'nav.accounts' },
   { to: '/profiles', icon: FolderOpen, i18nKey: 'nav.instances' },
   { to: '/skins', icon: Shirt, i18nKey: 'nav.skins' },
+  { to: '/servers', icon: Globe, i18nKey: 'nav.servers' },
   { to: '/cosmetics', icon: Sparkles, i18nKey: 'nav.cosmetics' },
   { to: '/settings', icon: Settings, i18nKey: 'nav.settings' },
 ]

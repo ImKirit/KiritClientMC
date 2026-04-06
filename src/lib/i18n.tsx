@@ -9,6 +9,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.accounts': 'Accounts',
     'nav.instances': 'Instances',
     'nav.skins': 'Skins',
+    'nav.servers': 'Servers',
     'nav.cosmetics': 'Cosmetics',
     'nav.settings': 'Settings',
 
@@ -150,6 +151,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.accounts': 'Konten',
     'nav.instances': 'Instanzen',
     'nav.skins': 'Skins',
+    'nav.servers': 'Server',
     'nav.cosmetics': 'Kosmetik',
     'nav.settings': 'Einstellungen',
 

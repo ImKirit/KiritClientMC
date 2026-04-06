@@ -68,6 +68,7 @@ pub struct AuthResult {
     pub skin_url: Option<String>,
     pub access_token: String,
     pub refresh_token: String,
+    pub xuid: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -326,5 +327,6 @@ pub async fn full_auth_chain(client: &Client, ms_token: &str, refresh_token: &st
         skin_url,
         access_token: mc_auth.access_token,
         refresh_token: refresh_token.to_string(),
+        xuid: userhash,
     })
 }
