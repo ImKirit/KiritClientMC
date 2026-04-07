@@ -23,13 +23,11 @@ public class KiritClientMod implements ClientModInitializer {
     private HitboxRenderer hitboxRenderer;
     private WaypointManager waypointManager;
     private FriendsManager friendsManager;
-    private EspManager espManager;
     private FullbrightManager fullbrightManager;
 
     private KeyBinding settingsKey;
     private KeyBinding waypointKey;
     private KeyBinding toggleHitboxKey;
-    private KeyBinding toggleEspKey;
     private KeyBinding toggleFullbrightKey;
 
     public static KiritClientMod getInstance() {
@@ -55,9 +53,6 @@ public class KiritClientMod implements ClientModInitializer {
         try { friendsManager = new FriendsManager(); }
         catch (Throwable e) { LOGGER.warn("[KiritClient] FriendsManager failed: {}", e.getMessage()); }
 
-        try { espManager = new EspManager(); }
-        catch (Throwable e) { LOGGER.warn("[KiritClient] EspManager failed: {}", e.getMessage()); }
-
         try { fullbrightManager = new FullbrightManager(); }
         catch (Throwable e) { LOGGER.warn("[KiritClient] FullbrightManager failed: {}", e.getMessage()); }
 
@@ -70,9 +65,6 @@ public class KiritClientMod implements ClientModInitializer {
 
         toggleHitboxKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.kiritclient.hitbox", GLFW.GLFW_KEY_H, KeyBinding.Category.MISC));
-
-        toggleEspKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                "key.kiritclient.esp", GLFW.GLFW_KEY_J, KeyBinding.Category.MISC));
 
         toggleFullbrightKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.kiritclient.fullbright", GLFW.GLFW_KEY_K, KeyBinding.Category.MISC));
@@ -90,11 +82,6 @@ public class KiritClientMod implements ClientModInitializer {
                 config.save();
                 LOGGER.info("[KiritClient] Hitboxes: {}", config.hitboxesEnabled ? "ON" : "OFF");
             }
-            if (toggleEspKey.wasPressed()) {
-                config.espEnabled = !config.espEnabled;
-                config.save();
-                LOGGER.info("[KiritClient] ESP: {}", config.espEnabled ? "ON" : "OFF");
-            }
             if (toggleFullbrightKey.wasPressed()) {
                 config.fullbrightEnabled = !config.fullbrightEnabled;
                 config.save();
@@ -102,11 +89,10 @@ public class KiritClientMod implements ClientModInitializer {
             }
 
             // Tick features
-            if (espManager != null) espManager.tick(client);
             if (fullbrightManager != null) fullbrightManager.tick(client);
         });
 
-        LOGGER.info("[KiritClient] Loaded! RIGHT_SHIFT=Settings, J=ESP, K=Fullbright");
+        LOGGER.info("[KiritClient] Loaded! RIGHT_SHIFT=Settings, K=Fullbright");
     }
 
     public KiritConfig getConfig() { return config; }
@@ -114,6 +100,5 @@ public class KiritClientMod implements ClientModInitializer {
     public HitboxRenderer getHitboxRenderer() { return hitboxRenderer; }
     public WaypointManager getWaypointManager() { return waypointManager; }
     public FriendsManager getFriendsManager() { return friendsManager; }
-    public EspManager getEspManager() { return espManager; }
     public FullbrightManager getFullbrightManager() { return fullbrightManager; }
 }

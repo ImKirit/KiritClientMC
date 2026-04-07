@@ -9,24 +9,12 @@ import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Glass-style settings screen for KiritClient.
  * Custom rendering — no MC-style buttons. Rounded corners, transparent gray design.
  */
 public class KiritSettingsScreen extends Screen {
-
-    private static final List<String> BLOCK_OPTIONS = List.of(
-            "minecraft:diamond_ore", "minecraft:deepslate_diamond_ore",
-            "minecraft:chest", "minecraft:ender_chest",
-            "minecraft:spawner", "minecraft:ancient_debris"
-    );
-    private static final List<String> ENTITY_OPTIONS = List.of(
-            "minecraft:player", "minecraft:zombie", "minecraft:creeper",
-            "minecraft:skeleton", "minecraft:enderman", "minecraft:villager",
-            "minecraft:item"
-    );
 
     private final Screen parent;
     private KiritConfig config;
@@ -97,55 +85,7 @@ public class KiritSettingsScreen extends Screen {
                 () -> config.cosmeticsEnabled = !config.cosmeticsEnabled);
         addToggle(ctx, contentX + btnW + 6, y, btnW, btnH, "Fullbright", config.fullbrightEnabled, mouseX, mouseY,
                 () -> config.fullbrightEnabled = !config.fullbrightEnabled);
-        y += spacing + 6;
-
-        // === ESP ===
-        GlassUI.drawSectionHeader(ctx, this.textRenderer, contentX, y, contentW, "ESP");
-        y += 16;
-
-        addToggle(ctx, contentX, y, contentW, btnH, "ESP Master", config.espEnabled, mouseX, mouseY,
-                () -> config.espEnabled = !config.espEnabled);
-        y += spacing;
-
-        addToggle(ctx, contentX, y, btnW, btnH, "Entity", config.entityEspEnabled, mouseX, mouseY,
-                () -> config.entityEspEnabled = !config.entityEspEnabled);
-        addToggle(ctx, contentX + btnW + 6, y, btnW, btnH, "Block", config.blockEspEnabled, mouseX, mouseY,
-                () -> config.blockEspEnabled = !config.blockEspEnabled);
-        y += spacing;
-
-        addToggle(ctx, contentX, y, btnW, btnH, "Items", config.itemEspEnabled, mouseX, mouseY,
-                () -> config.itemEspEnabled = !config.itemEspEnabled);
-        addToggle(ctx, contentX + btnW + 6, y, btnW, btnH, "Storage", config.storageEspEnabled, mouseX, mouseY,
-                () -> config.storageEspEnabled = !config.storageEspEnabled);
-        y += spacing;
-
-        addToggle(ctx, contentX, y, btnW, btnH, "Tracers", config.tracerEnabled, mouseX, mouseY,
-                () -> config.tracerEnabled = !config.tracerEnabled);
-
-        // Range button
-        addButton(ctx, contentX + btnW + 6, y, btnW, btnH, "Range: " + config.espScanRange, mouseX, mouseY,
-                () -> { config.espScanRange = config.espScanRange >= 96 ? 8 : config.espScanRange + 8; });
-        y += spacing + 6;
-
-        // === Block Selection ===
-        GlassUI.drawSectionHeader(ctx, this.textRenderer, contentX, y, contentW, "Block ESP Selection");
-        y += 14;
-
-        for (String block : BLOCK_OPTIONS) {
-            addSelection(ctx, contentX, y, contentW, 16, shortName(block), block, config.espSelectedBlocks, mouseX, mouseY);
-            y += 18;
-        }
-        y += 4;
-
-        // === Entity Selection ===
-        GlassUI.drawSectionHeader(ctx, this.textRenderer, contentX, y, contentW, "Entity ESP Selection");
-        y += 14;
-
-        for (String entity : ENTITY_OPTIONS) {
-            addSelection(ctx, contentX, y, contentW, 16, shortName(entity), entity, config.espSelectedEntities, mouseX, mouseY);
-            y += 18;
-        }
-        y += 8;
+        y += spacing + 8;
 
         // Close button
         boolean closeHovered = GlassUI.drawButton(ctx, panelX + panelW / 2 - 50, panelY + panelH - 28, 100, 20, mouseX, mouseY, false);
@@ -155,7 +95,7 @@ public class KiritSettingsScreen extends Screen {
         contentHeight = y - (panelY + 40) + scrollOffset;
 
         // Keybind hints at bottom
-        ctx.drawCenteredTextWithShadow(this.textRenderer, "RIGHT SHIFT = Menu | J = ESP | K = Fullbright",
+        ctx.drawCenteredTextWithShadow(this.textRenderer, "RIGHT SHIFT = Menu | K = Fullbright",
                 this.width / 2, this.height - 10, GlassUI.TEXT_MUTED);
 
         // Branding
@@ -166,27 +106,6 @@ public class KiritSettingsScreen extends Screen {
                            int mouseX, int mouseY, Runnable action) {
         GlassUI.drawToggle(ctx, this.textRenderer, x, y, w, h, label, value, mouseX, mouseY);
         clickAreas.add(new ClickArea(x, y, w, h, () -> { action.run(); config.save(); }));
-    }
-
-    private void addButton(DrawContext ctx, int x, int y, int w, int h, String label,
-                           int mouseX, int mouseY, Runnable action) {
-        GlassUI.drawButton(ctx, x, y, w, h, mouseX, mouseY, false);
-        ctx.drawCenteredTextWithShadow(this.textRenderer, label, x + w / 2, y + (h - this.textRenderer.fontHeight) / 2, GlassUI.TEXT_PRIMARY);
-        clickAreas.add(new ClickArea(x, y, w, h, () -> { action.run(); config.save(); }));
-    }
-
-    private void addSelection(DrawContext ctx, int x, int y, int w, int h, String label, String id,
-                              Set<String> set, int mouseX, int mouseY) {
-        GlassUI.drawSelectionItem(ctx, this.textRenderer, x, y, w, h, label, set.contains(id), mouseX, mouseY);
-        clickAreas.add(new ClickArea(x, y, w, h, () -> {
-            if (set.contains(id)) set.remove(id); else set.add(id);
-            config.save();
-        }));
-    }
-
-    private String shortName(String id) {
-        int i = id.indexOf(':');
-        return i >= 0 ? id.substring(i + 1) : id;
     }
 
     @Override
