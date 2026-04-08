@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { RefreshCw, HardDrive, Palette, Sparkles, Globe, MousePointer2, Zap, X, Plus } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { RefreshCw, HardDrive, Palette, Sparkles, Globe, MousePointer2, Zap, X, Plus, Search, Package, Download } from 'lucide-react'
 import { useSettingsStore, type StandardPackage } from '../stores/settingsStore'
 import { useI18n, type Locale } from '../lib/i18n'
 
@@ -324,8 +324,6 @@ export function SettingsPage() {
           type="mod"
           packages={settings.standard_packages}
           onChange={(pkgs) => update({ standard_packages: pkgs })}
-          addLabel={t('settings.addStandard')}
-          placeholder={t('settings.standardTitle')}
         />
 
         {/* Standard Texture Packs */}
@@ -334,8 +332,6 @@ export function SettingsPage() {
           type="resourcepack"
           packages={settings.standard_packages}
           onChange={(pkgs) => update({ standard_packages: pkgs })}
-          addLabel={t('settings.addStandard')}
-          placeholder={t('settings.standardTitle')}
         />
 
         {/* Standard Shaders */}
@@ -344,67 +340,178 @@ export function SettingsPage() {
           type="shader"
           packages={settings.standard_packages}
           onChange={(pkgs) => update({ standard_packages: pkgs })}
-          addLabel={t('settings.addStandard')}
-          placeholder={t('settings.standardTitle')}
         />
       </section>
     </div>
   )
 }
 
-function StandardsList({ label, type, packages, onChange, addLabel, placeholder }: {
+interface ModrinthHit {
+  slug: string
+  title: string
+  description: string
+  icon_url: string | null
+  downloads: number
+}
+
+const MODRINTH_TYPE: Record<string, string> = {
+  mod: 'mod',
+  resourcepack: 'resourcepack',
+  shader: 'shader',
+}
+
+function StandardsList({ label, type, packages, onChange }: {
   label: string
   type: string
   packages: StandardPackage[]
   onChange: (pkgs: StandardPackage[]) => void
-  addLabel: string
-  placeholder: string
 }) {
-  const [newTitle, setNewTitle] = useState('')
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<ModrinthHit[]>([])
+  const [searching, setSearching] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const filtered = packages.filter(p => p.resource_type === type)
 
-  const add = () => {
-    if (!newTitle.trim()) return
-    onChange([...packages, { title: newTitle.trim(), resource_type: type }])
-    setNewTitle('')
+  const search = async (q: string) => {
+    if (!q.trim()) { setResults([]); return }
+    setSearching(true)
+    try {
+      const facets = JSON.stringify([[`project_type:${MODRINTH_TYPE[type] ?? type}`]])
+      const params = new URLSearchParams({ query: q, limit: '12', facets })
+      const res = await fetch(`https://api.modrinth.com/v2/search?${params}`)
+      const data = await res.json()
+      setResults(data.hits || [])
+    } catch { setResults([]) }
+    setSearching(false)
   }
 
-  const remove = (title: string) => {
-    onChange(packages.filter(p => !(p.resource_type === type && p.title === title)))
+  const handleInput = (value: string) => {
+    setQuery(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => search(value), 400)
+  }
+
+  const isAdded = (slug: string) => filtered.some(p => p.slug === slug || p.title === slug)
+
+  const add = (hit: ModrinthHit) => {
+    if (isAdded(hit.slug)) return
+    onChange([...packages, {
+      title: hit.title,
+      resource_type: type,
+      slug: hit.slug,
+      icon_url: hit.icon_url,
+    }])
+  }
+
+  const remove = (slug: string | undefined, title: string) => {
+    onChange(packages.filter(p => !(
+      p.resource_type === type && (slug ? p.slug === slug : p.title === title)
+    )))
+  }
+
+  const formatDL = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+    if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
+    return String(n)
   }
 
   return (
-    <div className="mb-6 last:mb-0">
-      <label className="text-[13px] text-[var(--text-2)] mb-3 block">{label} ({filtered.length})</label>
-      <div className="flex flex-wrap gap-2 mb-3">
-        {filtered.map(pkg => (
-          <span
-            key={pkg.title}
-            className="inline-flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full bg-white/[0.06] text-[var(--text-2)]"
-          >
-            {pkg.title}
-            <button
-              className="hover:text-red-400 transition-colors"
-              onClick={() => remove(pkg.title)}
+    <div className="mb-7 last:mb-0">
+      <label className="text-[13px] text-[var(--text-2)] mb-3 block font-medium">
+        {label} <span className="text-[var(--text-3)]">({filtered.length})</span>
+      </label>
+
+      {/* Added packages */}
+      {filtered.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {filtered.map(pkg => (
+            <span
+              key={pkg.slug ?? pkg.title}
+              className="inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.06] text-[var(--text-2)]"
             >
-              <X size={12} />
-            </button>
-          </span>
-        ))}
-      </div>
-      <div className="flex gap-2">
+              {pkg.icon_url ? (
+                <img src={pkg.icon_url} alt="" className="w-3.5 h-3.5 rounded object-cover" />
+              ) : (
+                <Package size={11} className="text-[var(--text-3)]" />
+              )}
+              <span className="max-w-[120px] truncate">{pkg.title}</span>
+              <button
+                className="hover:text-red-400 transition-colors ml-0.5"
+                onClick={() => remove(pkg.slug, pkg.title)}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="relative mb-2">
+        <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
         <input
-          className="glass-input flex-1 text-[13px]"
-          placeholder={placeholder}
-          value={newTitle}
-          onChange={e => setNewTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && add()}
+          className="glass-input pl-9 text-[13px]"
+          placeholder={`Search ${label.toLowerCase()} on Modrinth...`}
+          value={query}
+          onChange={e => handleInput(e.target.value)}
         />
-        <button className="glass-btn text-[13px] px-4" onClick={add}>
-          <Plus size={14} />
-          {addLabel}
-        </button>
       </div>
+
+      {searching && (
+        <p className="text-[11px] text-[var(--text-3)] mb-2">Searching...</p>
+      )}
+
+      {/* Search results */}
+      {results.length > 0 && (
+        <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+          {results.map(hit => {
+            const added = isAdded(hit.slug)
+            return (
+              <div
+                key={hit.slug}
+                className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] border border-transparent hover:bg-white/[0.055] hover:border-white/[0.07] transition-all"
+              >
+                {hit.icon_url ? (
+                  <img src={hit.icon_url} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                    <Package size={13} className="text-[var(--text-3)]" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium truncate">{hit.title}</p>
+                  <p className="text-[11px] text-[var(--text-3)] truncate">{hit.description}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] text-[var(--text-3)] flex items-center gap-1">
+                    <Download size={9} />
+                    {formatDL(hit.downloads)}
+                  </span>
+                  {added ? (
+                    <button
+                      className="p-1.5 rounded-lg bg-white/[0.08] text-[var(--text-3)]"
+                      onClick={() => remove(hit.slug, hit.title)}
+                    >
+                      <X size={13} />
+                    </button>
+                  ) : (
+                    <button
+                      className="p-1.5 rounded-lg hover:bg-white/[0.1] text-[var(--text-2)] transition-colors"
+                      onClick={() => add(hit)}
+                    >
+                      <Plus size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {!searching && query && results.length === 0 && (
+        <p className="text-[11px] text-[var(--text-3)]">No results found</p>
+      )}
     </div>
   )
 }

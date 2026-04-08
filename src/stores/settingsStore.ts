@@ -10,6 +10,8 @@ export interface JavaInstallation {
 export interface StandardPackage {
   title: string
   resource_type: string
+  slug?: string
+  icon_url?: string | null
 }
 
 export interface Settings {
