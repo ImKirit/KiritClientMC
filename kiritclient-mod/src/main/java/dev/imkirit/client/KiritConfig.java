@@ -29,6 +29,7 @@ public class KiritConfig {
     public boolean waypointBeam = true;
     public boolean waypointDistance = true;
     public int waypointRenderDistance = 500;
+    public boolean waypointDeathAutoset = false;
 
     // Cape API
     public String capeApiUrl = "https://imkirit.dev/kc-api";

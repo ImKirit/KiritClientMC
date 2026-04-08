@@ -5,7 +5,8 @@
   "client": [
     "InGameHudMixin",
     "ScreenMixin",
-    "GameMenuScreenMixin"
+    "GameMenuScreenMixin",
+    "ClientPlayerEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 0
