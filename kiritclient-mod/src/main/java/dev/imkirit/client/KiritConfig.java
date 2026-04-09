@@ -37,6 +37,24 @@ public class KiritConfig {
     // Fullbright
     public boolean fullbrightEnabled = false;
 
+    // Zoom
+    public boolean zoomEnabled = true;
+    public int zoomFov = 15;
+
+    // Coordinates HUD
+    public boolean coordsHudEnabled = false;
+
+    // Custom Crosshair
+    public boolean customCrosshairEnabled = false;
+    public String crosshairType = "plus"; // plus, dot, circle
+    public int crosshairSize = 6;
+    public int crosshairThickness = 2;
+    public int crosshairGap = 3;
+    public float crosshairRed = 1.0f;
+    public float crosshairGreen = 1.0f;
+    public float crosshairBlue = 1.0f;
+    public float crosshairAlpha = 1.0f;
+
     private static Path getConfigPath() {
         return FabricLoader.getInstance().getConfigDir().resolve("kiritclient.json");
     }

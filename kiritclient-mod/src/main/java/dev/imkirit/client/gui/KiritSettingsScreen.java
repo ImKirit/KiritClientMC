@@ -290,6 +290,16 @@ public class KiritSettingsScreen extends Screen {
                 () -> { config.fullbrightEnabled = !config.fullbrightEnabled; config.save(); });
         y += 22;
 
+        // ─ Zoom ───────────────────────────────────────────────────
+        addToggle(ctx, contentX, y, contentW, btnH, "Zoom  [C]", config.zoomEnabled, mouseX, mouseY,
+                () -> { config.zoomEnabled = !config.zoomEnabled; config.save(); });
+        y += 22;
+
+        // ─ Coordinates HUD ────────────────────────────────────────
+        addToggle(ctx, contentX, y, contentW, btnH, "Coords HUD  [G]", config.coordsHudEnabled, mouseX, mouseY,
+                () -> { config.coordsHudEnabled = !config.coordsHudEnabled; config.save(); });
+        y += 22;
+
         // ─ Friends ────────────────────────────────────────────────
         addToggle(ctx, contentX, y, contentW, btnH, "Friends Highlight", config.friendsEnabled, mouseX, mouseY,
                 () -> { config.friendsEnabled = !config.friendsEnabled; config.save(); });

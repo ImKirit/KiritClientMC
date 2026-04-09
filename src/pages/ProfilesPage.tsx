@@ -14,6 +14,7 @@ export function ProfilesPage() {
   const [showEditor, setShowEditor] = useState(false)
   const [resources, setResources] = useState<ResourceEntry[]>([])
   const [detailProfile, setDetailProfile] = useState<Profile | null>(null)
+  const [importing, setImporting] = useState(false)
 
   useEffect(() => {
     loadProfiles()
@@ -125,12 +126,21 @@ export function ProfilesPage() {
           { name: 'Norisk (.noriskpack / .zip)', extensions: ['noriskpack', 'zip'] },
         ],
       })
-      if (selected) {
-        await invoke<Profile>('import_mrpack', { filePath: selected })
+      if (!selected) return
+      setImporting(true)
+      try {
+        const imported = await invoke<Profile>('import_mrpack', { filePath: selected })
         await loadProfiles()
+        selectProfile(imported.id)
+        setDetailProfile(imported)
+      } catch (e) {
+        console.error('Import failed:', e)
+        alert(`Import failed: ${e}`)
+      } finally {
+        setImporting(false)
       }
-    } catch {
-      console.error('File dialog not available')
+    } catch (e) {
+      console.error('File dialog error:', e)
     }
   }
 
@@ -171,8 +181,8 @@ export function ProfilesPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-xl font-semibold">{t('instances.title')}</h1>
         <div className="flex gap-2">
-          <button className="glass-btn" onClick={handleImportPack} title="Import .mrpack">
-            <Upload size={16} />
+          <button className="glass-btn" onClick={handleImportPack} disabled={importing} title="Import .mrpack">
+            <Upload size={16} className={importing ? 'animate-pulse' : ''} />
           </button>
           <button className="glass-btn glass-btn-primary" onClick={openNewProfile}>
             <Plus size={16} />

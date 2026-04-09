@@ -187,6 +187,32 @@ async fn delete_profile(id: String, state: State<'_, AppState>) -> Result<(), St
     save_profiles_to_disk(&state).await
 }
 
+// ---- Folder Commands ----
+
+#[tauri::command]
+async fn open_instance_folder(profile_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let dir = state.data_dir.join("instances").join(&profile_id);
+    if !dir.exists() {
+        tokio::fs::create_dir_all(&dir).await.map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "windows")]
+    std::process::Command::new("explorer")
+        .arg(dir.to_string_lossy().to_string())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    #[cfg(target_os = "macos")]
+    std::process::Command::new("open")
+        .arg(&dir)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    #[cfg(target_os = "linux")]
+    std::process::Command::new("xdg-open")
+        .arg(&dir)
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // ---- Resource Commands ----
 
 #[tauri::command]
@@ -1145,6 +1171,7 @@ pub fn run() {
             import_mrpack,
             export_mrpack,
             check_for_updates,
+            open_instance_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

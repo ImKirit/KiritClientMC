@@ -24,11 +24,14 @@ public class KiritClientMod implements ClientModInitializer {
     private WaypointManager waypointManager;
     private FriendsManager friendsManager;
     private FullbrightManager fullbrightManager;
+    private ZoomManager zoomManager;
 
     private KeyBinding settingsKey;
     private KeyBinding waypointKey;
     private KeyBinding toggleHitboxKey;
     private KeyBinding toggleFullbrightKey;
+    private KeyBinding zoomKey;
+    private KeyBinding toggleCoordsKey;
 
     public static KiritClientMod getInstance() {
         return instance;
@@ -56,6 +59,9 @@ public class KiritClientMod implements ClientModInitializer {
         try { fullbrightManager = new FullbrightManager(); }
         catch (Throwable e) { LOGGER.warn("[KiritClient] FullbrightManager failed: {}", e.getMessage()); }
 
+        try { zoomManager = new ZoomManager(); }
+        catch (Throwable e) { LOGGER.warn("[KiritClient] ZoomManager failed: {}", e.getMessage()); }
+
         // Keybinds
         settingsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.kiritclient.settings", GLFW.GLFW_KEY_RIGHT_SHIFT, KeyBinding.Category.MISC));
@@ -68,6 +74,12 @@ public class KiritClientMod implements ClientModInitializer {
 
         toggleFullbrightKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.kiritclient.fullbright", GLFW.GLFW_KEY_K, KeyBinding.Category.MISC));
+
+        zoomKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.kiritclient.zoom", GLFW.GLFW_KEY_C, KeyBinding.Category.MISC));
+
+        toggleCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.kiritclient.coords", GLFW.GLFW_KEY_G, KeyBinding.Category.MISC));
 
         // Tick handler
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -87,12 +99,27 @@ public class KiritClientMod implements ClientModInitializer {
                 config.save();
                 LOGGER.info("[KiritClient] Fullbright: {}", config.fullbrightEnabled ? "ON" : "OFF");
             }
+            if (toggleCoordsKey.wasPressed()) {
+                config.coordsHudEnabled = !config.coordsHudEnabled;
+                config.save();
+                LOGGER.info("[KiritClient] Coords HUD: {}", config.coordsHudEnabled ? "ON" : "OFF");
+            }
+
+            // Zoom: hold-to-zoom
+            if (zoomManager != null && config.zoomEnabled) {
+                if (zoomKey.isPressed()) {
+                    zoomManager.startZoom(client);
+                    zoomManager.tick(client);
+                } else {
+                    zoomManager.stopZoom(client);
+                }
+            }
 
             // Tick features
             if (fullbrightManager != null) fullbrightManager.tick(client);
         });
 
-        LOGGER.info("[KiritClient] Loaded! RIGHT_SHIFT=Settings, K=Fullbright");
+        LOGGER.info("[KiritClient] Loaded! RIGHT_SHIFT=Settings, K=Fullbright, C=Zoom, G=Coords");
     }
 
     public KiritConfig getConfig() { return config; }
@@ -101,4 +128,5 @@ public class KiritClientMod implements ClientModInitializer {
     public WaypointManager getWaypointManager() { return waypointManager; }
     public FriendsManager getFriendsManager() { return friendsManager; }
     public FullbrightManager getFullbrightManager() { return fullbrightManager; }
+    public ZoomManager getZoomManager() { return zoomManager; }
 }

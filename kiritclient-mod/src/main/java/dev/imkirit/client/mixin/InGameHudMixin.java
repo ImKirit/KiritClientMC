@@ -40,5 +40,30 @@ public abstract class InGameHudMixin {
                         online > 0 ? 0xFF44FF88 : 0xFFAAAAAA);
             }
         }
+
+        // Coordinates HUD (top-left)
+        if (KiritClientMod.getInstance().getConfig().coordsHudEnabled && client.player != null) {
+            int x = (int) Math.floor(client.player.getX());
+            int y = (int) Math.floor(client.player.getY());
+            int z = (int) Math.floor(client.player.getZ());
+            String facing = switch (client.player.getHorizontalFacing()) {
+                case NORTH -> "N (-Z)";
+                case SOUTH -> "S (+Z)";
+                case WEST -> "W (-X)";
+                case EAST -> "E (+X)";
+                default -> "";
+            };
+
+            String coordsLine = String.format("XYZ: %d / %d / %d", x, y, z);
+            String facingLine = "Facing: " + facing;
+
+            // Background for readability
+            int bgW = Math.max(client.textRenderer.getWidth(coordsLine),
+                    client.textRenderer.getWidth(facingLine)) + 8;
+            context.fill(2, 2, 2 + bgW, 26, 0x80000000);
+
+            context.drawTextWithShadow(client.textRenderer, coordsLine, 6, 5, 0xFFFFFFFF);
+            context.drawTextWithShadow(client.textRenderer, facingLine, 6, 15, 0xFFAAAAAA);
+        }
     }
 }

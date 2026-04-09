@@ -1,7 +1,10 @@
 {
   "category.kiritclient": "KiritClient",
+  "key.categories.kiritclient": "KiritClient",
   "key.kiritclient.settings": "Open Settings",
   "key.kiritclient.waypoint": "Add Waypoint",
   "key.kiritclient.hitbox": "Toggle Hitboxes",
-  "key.kiritclient.fullbright": "Toggle Fullbright"
+  "key.kiritclient.fullbright": "Toggle Fullbright",
+  "key.kiritclient.zoom": "Zoom",
+  "key.kiritclient.coords": "Toggle Coords HUD"
 }

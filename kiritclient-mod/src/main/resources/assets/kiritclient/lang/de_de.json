@@ -1,7 +1,10 @@
 {
   "category.kiritclient": "KiritClient",
+  "key.categories.kiritclient": "KiritClient",
   "key.kiritclient.settings": "Einstellungen öffnen",
   "key.kiritclient.waypoint": "Waypoint setzen",
   "key.kiritclient.hitbox": "Hitboxen umschalten",
-  "key.kiritclient.fullbright": "Fullbright umschalten"
+  "key.kiritclient.fullbright": "Fullbright umschalten",
+  "key.kiritclient.zoom": "Zoom",
+  "key.kiritclient.coords": "Koordinaten HUD"
 }

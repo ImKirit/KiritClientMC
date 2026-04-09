@@ -6,7 +6,9 @@
     "InGameHudMixin",
     "ScreenMixin",
     "GameMenuScreenMixin",
-    "ClientPlayerEntityMixin"
+    "ClientPlayerEntityMixin",
+    "EntityRendererMixin",
+    "LightmapMixin"
   ],
   "injectors": {
     "defaultRequire": 0

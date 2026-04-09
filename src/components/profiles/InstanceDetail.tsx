@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Package, Plus, X, Download, ToggleLeft, ToggleRight, ChevronLeft, Clock, HardDrive, Gamepad2, Settings, Info, Image, Zap } from 'lucide-react'
+import { Search, Package, Plus, X, Download, ToggleLeft, ToggleRight, ChevronLeft, Clock, HardDrive, Gamepad2, Settings, Info, Image, Zap, FolderOpen } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
 import type { Profile, LoaderType } from '../../stores/profileStore'
 import { useProfileStore } from '../../stores/profileStore'
@@ -590,13 +590,28 @@ export function InstanceDetail({ profile: initialProfile, onBack }: InstanceDeta
               />
             </div>
 
-            {/* Save Button */}
-            <button
-              className="glass-btn glass-btn-primary w-full"
-              onClick={handleSaveSettings}
-            >
-              {settingsSaved ? t('instances.settingsSaved') : t('instances.saveSettings')}
-            </button>
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                className="glass-btn flex items-center justify-center gap-2 flex-1"
+                onClick={async () => {
+                  try {
+                    await invoke('open_instance_folder', { profileId: profile.id })
+                  } catch (e) {
+                    console.error('Failed to open folder:', e)
+                  }
+                }}
+              >
+                <FolderOpen size={15} />
+                {t('instances.openFolder')}
+              </button>
+              <button
+                className="glass-btn glass-btn-primary flex-1"
+                onClick={handleSaveSettings}
+              >
+                {settingsSaved ? t('instances.settingsSaved') : t('instances.saveSettings')}
+              </button>
+            </div>
           </div>
         </div>
       )}
