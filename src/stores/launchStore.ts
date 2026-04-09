@@ -13,20 +13,22 @@ interface LaunchStore {
   isLaunching: boolean
   progress: LaunchProgress | null
   error: string | null
+  lastLaunchedProfileId: string | null
 
   launchGame: (profileId: string) => Promise<void>
   reset: () => void
   setupListeners: () => Promise<() => void>
 }
 
-export const useLaunchStore = create<LaunchStore>((set) => ({
+export const useLaunchStore = create<LaunchStore>((set, get) => ({
   isLaunching: false,
   progress: null,
   error: null,
+  lastLaunchedProfileId: null,
 
   launchGame: async (profileId: string) => {
     console.log('[Launch] Starting launch for profile:', profileId)
-    set({ isLaunching: true, progress: null, error: null })
+    set({ isLaunching: true, progress: null, error: null, lastLaunchedProfileId: profileId })
     try {
       await invoke('launch_game', { profileId })
       console.log('[Launch] invoke returned successfully')
@@ -53,6 +55,18 @@ export const useLaunchStore = create<LaunchStore>((set) => ({
       console.error('[Launch] MC Error:', event.payload)
       set({ error: event.payload, isLaunching: false })
     })
-    return () => { unlisten1(); unlisten2() }
+    const unlisten3 = await listen<number>('game:exited', async (event) => {
+      const minutes = event.payload
+      const profileId = get().lastLaunchedProfileId
+      console.log(`[Launch] Game exited after ${minutes} minutes (profile: ${profileId})`)
+      if (profileId && minutes > 0) {
+        try {
+          await invoke('update_playtime', { profileId, minutes })
+        } catch (e) {
+          console.error('[Launch] Failed to update playtime:', e)
+        }
+      }
+    })
+    return () => { unlisten1(); unlisten2(); unlisten3() }
   },
 }))

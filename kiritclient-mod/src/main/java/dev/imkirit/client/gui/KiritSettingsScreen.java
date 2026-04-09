@@ -7,6 +7,10 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 
+import net.minecraft.client.input.CharInput;
+import net.minecraft.client.input.KeyInput;
+import org.lwjgl.glfw.GLFW;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +27,7 @@ public class KiritSettingsScreen extends Screen {
     // Tabs
     private static final int TAB_GENERAL = 0;
     private static final int TAB_MODS    = 1;
+    private static final int TAB_MACROS  = 2;
     private int activeTab = TAB_GENERAL;
 
     // UI tracking
@@ -34,6 +39,13 @@ public class KiritSettingsScreen extends Screen {
     // Expanded mod sub-settings
     private boolean hitboxExpanded  = false;
     private boolean waypointExpanded = false;
+    private boolean crosshairExpanded = false;
+
+    // Macro editing state
+    private int waitingForKeyMacroIndex = -1; // which macro is waiting for key input
+    private int editingMacroIndex = -1; // which macro is being text-edited
+    private boolean editingName = false; // true=editing name, false=editing command
+    private StringBuilder editBuffer = new StringBuilder();
 
     public KiritSettingsScreen(Screen parent) {
         super(Text.literal("KiritClient Settings"));
@@ -67,12 +79,13 @@ public class KiritSettingsScreen extends Screen {
 
         // ── Tab Bar ────────────────────────────────────────────────
         int tabY = panelY + 36;
-        int tabW = (panelW - 24) / 2;
+        int tabW = (panelW - 24 - 8) / 3;
         int tabH = 16;
         int tabX = panelX + 12;
 
-        drawTab(ctx, tabX,          tabY, tabW, tabH, "General", TAB_GENERAL, mouseX, mouseY);
-        drawTab(ctx, tabX + tabW + 4, tabY, tabW, tabH, "Mods",    TAB_MODS,    mouseX, mouseY);
+        drawTab(ctx, tabX,                    tabY, tabW, tabH, "General", TAB_GENERAL, mouseX, mouseY);
+        drawTab(ctx, tabX + tabW + 4,         tabY, tabW, tabH, "Mods",    TAB_MODS,    mouseX, mouseY);
+        drawTab(ctx, tabX + (tabW + 4) * 2,   tabY, tabW, tabH, "Macros",  TAB_MACROS,  mouseX, mouseY);
 
         // ── Scrollable content ────────────────────────────────────
         // Clip region (software clip via min/max in draw calls)
@@ -88,8 +101,10 @@ public class KiritSettingsScreen extends Screen {
 
         if (activeTab == TAB_GENERAL) {
             y = renderGeneralTab(ctx, contentX, contentW, y, mouseX, mouseY);
-        } else {
+        } else if (activeTab == TAB_MODS) {
             y = renderModsTab(ctx, contentX, contentW, y, mouseX, mouseY);
+        } else {
+            y = renderMacrosTab(ctx, contentX, contentW, y, mouseX, mouseY);
         }
 
         ctx.disableScissor();
@@ -113,7 +128,7 @@ public class KiritSettingsScreen extends Screen {
         clickAreas.add(new ClickArea(closeX, closeY, 100, 18, this::close));
 
         // ── Hints ──────────────────────────────────────────────────
-        ctx.drawCenteredTextWithShadow(this.textRenderer, "RIGHT SHIFT = Menu | K = Fullbright",
+        ctx.drawCenteredTextWithShadow(this.textRenderer, "RSHIFT=Menu  K=Bright  C=Zoom  G=Coords  V=Crosshair",
                 this.width / 2, this.height - 10, GlassUI.TEXT_MUTED);
 
         BrandingRenderer.render(ctx, this.width, this.height);
@@ -175,12 +190,21 @@ public class KiritSettingsScreen extends Screen {
         GlassUI.drawSectionHeader(ctx, this.textRenderer, contentX, y, contentW, "Keybinds");
         y += 16;
 
-        ctx.drawTextWithShadow(this.textRenderer, "RIGHT SHIFT", contentX, y, GlassUI.TEXT_PRIMARY);
-        ctx.drawTextWithShadow(this.textRenderer, "Open Settings", contentX + 80, y, GlassUI.TEXT_SECONDARY);
-        y += 12;
-        ctx.drawTextWithShadow(this.textRenderer, "K", contentX, y, GlassUI.TEXT_PRIMARY);
-        ctx.drawTextWithShadow(this.textRenderer, "Toggle Fullbright", contentX + 80, y, GlassUI.TEXT_SECONDARY);
-        y += 20;
+        String[][] keys = {
+                {"RSHIFT", "Open Settings"},
+                {"K", "Toggle Fullbright"},
+                {"C", "Hold to Zoom"},
+                {"G", "Toggle Coords HUD"},
+                {"V", "Toggle Crosshair"},
+                {"B", "Add Waypoint"},
+                {"H", "Toggle Hitboxes"},
+        };
+        for (String[] kv : keys) {
+            ctx.drawTextWithShadow(this.textRenderer, kv[0], contentX, y, GlassUI.TEXT_PRIMARY);
+            ctx.drawTextWithShadow(this.textRenderer, kv[1], contentX + 55, y, GlassUI.TEXT_SECONDARY);
+            y += 12;
+        }
+        y += 8;
 
         return y;
     }
@@ -299,6 +323,76 @@ public class KiritSettingsScreen extends Screen {
         addToggle(ctx, contentX, y, contentW, btnH, "Coords HUD  [G]", config.coordsHudEnabled, mouseX, mouseY,
                 () -> { config.coordsHudEnabled = !config.coordsHudEnabled; config.save(); });
         y += 22;
+
+        // ─ Custom Crosshair ──────────────────────────────────────
+        y = drawModHeader(ctx, contentX, contentW, y, btnH, "Crosshair  [V]", config.customCrosshairEnabled, mouseX, mouseY,
+                () -> { config.customCrosshairEnabled = !config.customCrosshairEnabled; config.save(); },
+                crosshairExpanded, () -> crosshairExpanded = !crosshairExpanded);
+        y += 4;
+
+        if (crosshairExpanded && config.customCrosshairEnabled) {
+            int sx = contentX + subIndent;
+
+            // Type selector
+            ctx.drawTextWithShadow(this.textRenderer, "Type", sx, y, GlassUI.TEXT_SECONDARY);
+            y += 10;
+            String[] types = {"plus", "dot", "circle"};
+            String[] labels = {"+ Plus", "• Dot", "○ Circle"};
+            int typeW = (subW - 8) / 3;
+            for (int i = 0; i < types.length; i++) {
+                int tx = sx + i * (typeW + 4);
+                boolean selected = config.crosshairType.equals(types[i]);
+                boolean hovered = mouseX >= tx && mouseX < tx + typeW && mouseY >= y && mouseY < y + 14;
+                ctx.fill(tx, y, tx + typeW, y + 14, selected ? 0x44FFFFFF : (hovered ? 0x22FFFFFF : 0x11FFFFFF));
+                ctx.drawCenteredTextWithShadow(this.textRenderer, labels[i], tx + typeW / 2, y + 3,
+                        selected ? GlassUI.TEXT_PRIMARY : GlassUI.TEXT_SECONDARY);
+                final String type = types[i];
+                clickAreas.add(new ClickArea(tx, y, typeW, 14, () -> { config.crosshairType = type; config.save(); }));
+            }
+            y += 20;
+
+            // Size slider
+            y = drawSliderRow(ctx, sx, y, subW, "Size", config.crosshairSize, 2, 20, mouseX, mouseY,
+                    val -> { config.crosshairSize = val; config.save(); }, config.crosshairSize + "px");
+            y += 6;
+
+            // Thickness slider
+            y = drawSliderRow(ctx, sx, y, subW, "Thickness", config.crosshairThickness, 1, 6, mouseX, mouseY,
+                    val -> { config.crosshairThickness = val; config.save(); }, config.crosshairThickness + "px");
+            y += 6;
+
+            // Gap slider
+            y = drawSliderRow(ctx, sx, y, subW, "Gap", config.crosshairGap, 0, 10, mouseX, mouseY,
+                    val -> { config.crosshairGap = val; config.save(); }, config.crosshairGap + "px");
+            y += 6;
+
+            // Color presets
+            ctx.drawTextWithShadow(this.textRenderer, "Color", sx, y, GlassUI.TEXT_SECONDARY);
+            y += 10;
+            int[] colors = { 0xFFFFFFFF, 0xFFFF4444, 0xFF44FF88, 0xFF4488FF, 0xFFFFFF44, 0xFFFF44FF };
+            int cbSize = 12;
+            int cbSpacing = 18;
+            for (int i = 0; i < colors.length; i++) {
+                int cbX = sx + i * cbSpacing;
+                int cbY = y;
+                ctx.fill(cbX, cbY, cbX + cbSize, cbY + cbSize, colors[i]);
+                float[] rgb = hexToRgb(colors[i]);
+                boolean sel = Math.abs(config.crosshairRed - rgb[0]) < 0.05f
+                        && Math.abs(config.crosshairGreen - rgb[1]) < 0.05f
+                        && Math.abs(config.crosshairBlue - rgb[2]) < 0.05f;
+                if (sel) {
+                    ctx.fill(cbX - 1, cbY - 1, cbX + cbSize + 1, cbY + cbSize + 1, 0x66FFFFFF);
+                    ctx.fill(cbX, cbY, cbX + cbSize, cbY + cbSize, colors[i]);
+                }
+                final float[] frgb = rgb;
+                clickAreas.add(new ClickArea(cbX, cbY, cbSize, cbSize, () -> {
+                    config.crosshairRed = frgb[0]; config.crosshairGreen = frgb[1]; config.crosshairBlue = frgb[2];
+                    config.save();
+                }));
+            }
+            y += cbSize + 8;
+        }
+        y += 4;
 
         // ─ Friends ────────────────────────────────────────────────
         addToggle(ctx, contentX, y, contentW, btnH, "Friends Highlight", config.friendsEnabled, mouseX, mouseY,
@@ -419,6 +513,143 @@ public class KiritSettingsScreen extends Screen {
         return y + trackH + 4;
     }
 
+    // ── Macros Tab ────────────────────────────────────────────────
+
+    private int renderMacrosTab(DrawContext ctx, int contentX, int contentW, int y, int mouseX, int mouseY) {
+        int btnH = 18;
+
+        // Master toggle
+        addToggle(ctx, contentX, y, contentW, btnH, "Macros Enabled", config.macrosEnabled, mouseX, mouseY,
+                () -> { config.macrosEnabled = !config.macrosEnabled; config.save(); });
+        y += 24;
+
+        if (!config.macrosEnabled) {
+            ctx.drawTextWithShadow(this.textRenderer, "Enable macros to configure", contentX, y, GlassUI.TEXT_MUTED);
+            return y + 20;
+        }
+
+        // Macro list
+        for (int i = 0; i < config.macros.size(); i++) {
+            KiritConfig.MacroEntry macro = config.macros.get(i);
+            int rowY = y;
+            int rowH = 32;
+
+            // Layout constants
+            int keyBtnW = 50;
+            int keyBtnX = contentX + contentW - keyBtnW - 22;
+            int nameAreaW = contentW - keyBtnW - 30;
+
+            // Background
+            boolean hovered = mouseX >= contentX && mouseX < contentX + contentW
+                    && mouseY >= rowY && mouseY < rowY + rowH;
+            ctx.fill(contentX, rowY, contentX + contentW, rowY + rowH, hovered ? 0x18FFFFFF : 0x0CFFFFFF);
+
+            // Name (clickable to edit)
+            boolean editingThisName = (editingMacroIndex == i && editingName);
+            String nameDisplay = editingThisName ? editBuffer.toString() + "_"
+                    : (macro.name.isEmpty() ? "Macro " + (i + 1) : macro.name);
+            int nameColor = editingThisName ? 0xFFFFFF44 : GlassUI.TEXT_PRIMARY;
+            ctx.drawTextWithShadow(this.textRenderer, nameDisplay, contentX + 4, rowY + 3, nameColor);
+            final int nameIdx = i;
+            clickAreas.add(new ClickArea(contentX, rowY, nameAreaW, 12, () -> {
+                editingMacroIndex = nameIdx;
+                editingName = true;
+                editBuffer = new StringBuilder(config.macros.get(nameIdx).name);
+                waitingForKeyMacroIndex = -1;
+            }));
+
+            // Command (clickable to edit)
+            boolean editingThisCmd = (editingMacroIndex == i && !editingName);
+            String cmdDisplay = editingThisCmd ? editBuffer.toString() + "_"
+                    : (macro.command.isEmpty() ? "(no command)" : macro.command);
+            if (!editingThisCmd && cmdDisplay.length() > 25) cmdDisplay = cmdDisplay.substring(0, 25) + "...";
+            int cmdColor = editingThisCmd ? 0xFFFFFF44 : GlassUI.TEXT_SECONDARY;
+            ctx.drawTextWithShadow(this.textRenderer, cmdDisplay, contentX + 4, rowY + 14, cmdColor);
+            clickAreas.add(new ClickArea(contentX, rowY + 12, nameAreaW, 12, () -> {
+                editingMacroIndex = nameIdx;
+                editingName = false;
+                editBuffer = new StringBuilder(config.macros.get(nameIdx).command);
+                waitingForKeyMacroIndex = -1;
+            }));
+            boolean isWaiting = (waitingForKeyMacroIndex == i);
+            String keyText = isWaiting ? "..." : getKeyName(macro.keyCode);
+            ctx.fill(keyBtnX, rowY + 4, keyBtnX + keyBtnW, rowY + 4 + 14,
+                    isWaiting ? 0x44FFFF44 : 0x22FFFFFF);
+            ctx.drawCenteredTextWithShadow(this.textRenderer, keyText,
+                    keyBtnX + keyBtnW / 2, rowY + 7, isWaiting ? 0xFFFFFF44 : GlassUI.TEXT_PRIMARY);
+
+            final int idx = i;
+            clickAreas.add(new ClickArea(keyBtnX, rowY + 4, keyBtnW, 14, () -> {
+                waitingForKeyMacroIndex = idx;
+            }));
+
+            // Delete button (X)
+            int delX = contentX + contentW - 18;
+            ctx.fill(delX, rowY + 4, delX + 14, rowY + 4 + 14, 0x22FF4444);
+            ctx.drawCenteredTextWithShadow(this.textRenderer, "X", delX + 7, rowY + 7, 0xFFFF4444);
+            clickAreas.add(new ClickArea(delX, rowY + 4, 14, 14, () -> {
+                config.macros.remove(idx);
+                config.save();
+                if (waitingForKeyMacroIndex == idx) waitingForKeyMacroIndex = -1;
+                else if (waitingForKeyMacroIndex > idx) waitingForKeyMacroIndex--;
+            }));
+
+            y += rowH + 2;
+        }
+
+        // Add button
+        y += 4;
+        GlassUI.drawButton(ctx, contentX, y, contentW, btnH, mouseX, mouseY, false);
+        ctx.drawCenteredTextWithShadow(this.textRenderer, "+ Add Macro", contentX + contentW / 2, y + 5, GlassUI.TEXT_PRIMARY);
+        clickAreas.add(new ClickArea(contentX, y, contentW, btnH, () -> {
+            config.macros.add(new KiritConfig.MacroEntry("", "/help", -1));
+            config.save();
+        }));
+        y += 24;
+
+        // Help text
+        ctx.drawTextWithShadow(this.textRenderer, "Click key button, then press", contentX, y, GlassUI.TEXT_MUTED);
+        y += 10;
+        ctx.drawTextWithShadow(this.textRenderer, "a key to bind. Commands", contentX, y, GlassUI.TEXT_MUTED);
+        y += 10;
+        ctx.drawTextWithShadow(this.textRenderer, "start with / for slash cmds.", contentX, y, GlassUI.TEXT_MUTED);
+        y += 16;
+
+        return y;
+    }
+
+    private String getKeyName(int keyCode) {
+        if (keyCode < 0) return "None";
+        String name = GLFW.glfwGetKeyName(keyCode, 0);
+        if (name != null) return name.toUpperCase();
+        // Named keys
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_F1 -> "F1";
+            case GLFW.GLFW_KEY_F2 -> "F2";
+            case GLFW.GLFW_KEY_F3 -> "F3";
+            case GLFW.GLFW_KEY_F4 -> "F4";
+            case GLFW.GLFW_KEY_F5 -> "F5";
+            case GLFW.GLFW_KEY_F6 -> "F6";
+            case GLFW.GLFW_KEY_F7 -> "F7";
+            case GLFW.GLFW_KEY_F8 -> "F8";
+            case GLFW.GLFW_KEY_F9 -> "F9";
+            case GLFW.GLFW_KEY_F10 -> "F10";
+            case GLFW.GLFW_KEY_F11 -> "F11";
+            case GLFW.GLFW_KEY_F12 -> "F12";
+            case GLFW.GLFW_KEY_KP_0 -> "NUM0";
+            case GLFW.GLFW_KEY_KP_1 -> "NUM1";
+            case GLFW.GLFW_KEY_KP_2 -> "NUM2";
+            case GLFW.GLFW_KEY_KP_3 -> "NUM3";
+            case GLFW.GLFW_KEY_KP_4 -> "NUM4";
+            case GLFW.GLFW_KEY_KP_5 -> "NUM5";
+            case GLFW.GLFW_KEY_KP_6 -> "NUM6";
+            case GLFW.GLFW_KEY_KP_7 -> "NUM7";
+            case GLFW.GLFW_KEY_KP_8 -> "NUM8";
+            case GLFW.GLFW_KEY_KP_9 -> "NUM9";
+            default -> "KEY" + keyCode;
+        };
+    }
+
     // ── Input handling ────────────────────────────────────────────
 
     @Override
@@ -434,6 +665,56 @@ public class KiritSettingsScreen extends Screen {
             }
         }
         return super.mouseClicked(click, bl);
+    }
+
+    @Override
+    public boolean keyPressed(KeyInput keyInput) {
+        int keyCode = keyInput.key();
+        // Text editing mode
+        if (editingMacroIndex >= 0 && editingMacroIndex < config.macros.size()) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                editingMacroIndex = -1;
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+                KiritConfig.MacroEntry macro = config.macros.get(editingMacroIndex);
+                if (editingName) {
+                    macro.name = editBuffer.toString();
+                } else {
+                    macro.command = editBuffer.toString();
+                }
+                config.save();
+                editingMacroIndex = -1;
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && editBuffer.length() > 0) {
+                editBuffer.deleteCharAt(editBuffer.length() - 1);
+                return true;
+            }
+            return true;
+        }
+
+        // Key binding mode
+        if (waitingForKeyMacroIndex >= 0 && waitingForKeyMacroIndex < config.macros.size()) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                waitingForKeyMacroIndex = -1;
+                return true;
+            }
+            config.macros.get(waitingForKeyMacroIndex).keyCode = keyCode;
+            config.save();
+            waitingForKeyMacroIndex = -1;
+            return true;
+        }
+        return super.keyPressed(keyInput);
+    }
+
+    @Override
+    public boolean charTyped(CharInput charInput) {
+        if (editingMacroIndex >= 0 && editBuffer.length() < 50 && charInput.isValidChar()) {
+            editBuffer.appendCodePoint(charInput.codepoint());
+            return true;
+        }
+        return super.charTyped(charInput);
     }
 
     @Override

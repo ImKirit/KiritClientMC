@@ -1,6 +1,7 @@
 package dev.imkirit.client.mixin;
 
 import dev.imkirit.client.KiritClientMod;
+import dev.imkirit.client.KiritConfig;
 import dev.imkirit.client.feature.FriendsManager;
 import dev.imkirit.client.gui.BrandingRenderer;
 import net.minecraft.client.MinecraftClient;
@@ -14,6 +15,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(InGameHud.class)
 public abstract class InGameHudMixin {
+
+    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true)
+    private void kiritclient_hideCrosshair(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        if (KiritClientMod.getInstance() != null
+                && KiritClientMod.getInstance().getConfig().customCrosshairEnabled) {
+            ci.cancel();
+        }
+    }
 
     @Inject(method = "render", at = @At("TAIL"))
     private void kiritclient_renderHud(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
@@ -38,6 +47,48 @@ public abstract class InGameHudMixin {
                 context.drawTextWithShadow(client.textRenderer,
                         text, screenWidth - textWidth - 4, 4,
                         online > 0 ? 0xFF44FF88 : 0xFFAAAAAA);
+            }
+        }
+
+        // Custom Crosshair
+        if (KiritClientMod.getInstance().getConfig().customCrosshairEnabled) {
+            KiritConfig cfg = KiritClientMod.getInstance().getConfig();
+            int cx = screenWidth / 2;
+            int cy = screenHeight / 2;
+            int color = ((int)(cfg.crosshairAlpha * 255) << 24)
+                      | ((int)(cfg.crosshairRed * 255) << 16)
+                      | ((int)(cfg.crosshairGreen * 255) << 8)
+                      | (int)(cfg.crosshairBlue * 255);
+            int size = cfg.crosshairSize;
+            int thick = cfg.crosshairThickness;
+            int gap = cfg.crosshairGap;
+            int half = thick / 2;
+
+            switch (cfg.crosshairType) {
+                case "plus" -> {
+                    // Top
+                    context.fill(cx - half, cy - gap - size, cx + half + (thick % 2), cy - gap, color);
+                    // Bottom
+                    context.fill(cx - half, cy + gap, cx + half + (thick % 2), cy + gap + size, color);
+                    // Left
+                    context.fill(cx - gap - size, cy - half, cx - gap, cy + half + (thick % 2), color);
+                    // Right
+                    context.fill(cx + gap, cy - half, cx + gap + size, cy + half + (thick % 2), color);
+                }
+                case "dot" -> {
+                    int dotSize = Math.max(2, thick);
+                    int dh = dotSize / 2;
+                    context.fill(cx - dh, cy - dh, cx + dh + (dotSize % 2), cy + dh + (dotSize % 2), color);
+                }
+                case "circle" -> {
+                    int radius = size;
+                    for (int angle = 0; angle < 360; angle += 3) {
+                        double rad = Math.toRadians(angle);
+                        int px = cx + (int)(Math.cos(rad) * radius);
+                        int py = cy + (int)(Math.sin(rad) * radius);
+                        context.fill(px, py, px + 1, py + 1, color);
+                    }
+                }
             }
         }
 

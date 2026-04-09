@@ -653,6 +653,15 @@ async fn launch_game(profile_id: String, app: AppHandle, state: State<'_, AppSta
 
     let pid = launcher::launch_minecraft(&version_json, &launch_config, &libraries_dir, &client_jar, Some(app.clone())).await?;
 
+    // Update last_played timestamp
+    {
+        let mut profiles = state.profiles.lock().await;
+        if let Some(p) = profiles.iter_mut().find(|p| p.id == profile_id) {
+            p.last_played = Some(chrono::Utc::now().to_rfc3339());
+        }
+    }
+    save_profiles_to_disk(&state).await.ok();
+
     emit_progress(&app, serde_json::json!({
         "stage": "running",
         "message": "Minecraft is running!",
@@ -972,6 +981,67 @@ fn add_dir_to_zip(
     Ok(())
 }
 
+// ---- Skins ----
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+struct SkinEntry {
+    id: String,
+    name: String,
+    data: String,
+    slim: bool,
+}
+
+#[tauri::command]
+async fn get_skins(state: State<'_, AppState>) -> Result<Vec<SkinEntry>, String> {
+    let path = state.data_dir.join("skins.json");
+    if !path.exists() {
+        return Ok(vec![]);
+    }
+    let data = tokio::fs::read_to_string(&path).await.map_err(|e| e.to_string())?;
+    serde_json::from_str(&data).map_err(|e| format!("Failed to parse skins: {}", e))
+}
+
+#[tauri::command]
+async fn save_skin(skin: SkinEntry, state: State<'_, AppState>) -> Result<(), String> {
+    let path = state.data_dir.join("skins.json");
+    let mut skins: Vec<SkinEntry> = if path.exists() {
+        let data = tokio::fs::read_to_string(&path).await.map_err(|e| e.to_string())?;
+        serde_json::from_str(&data).unwrap_or_default()
+    } else {
+        vec![]
+    };
+    skins.retain(|s| s.id != skin.id);
+    skins.push(skin);
+    let data = serde_json::to_string_pretty(&skins).map_err(|e| e.to_string())?;
+    tokio::fs::write(&path, data).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn remove_skin(skin_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    let path = state.data_dir.join("skins.json");
+    if !path.exists() {
+        return Ok(());
+    }
+    let data = tokio::fs::read_to_string(&path).await.map_err(|e| e.to_string())?;
+    let mut skins: Vec<SkinEntry> = serde_json::from_str(&data).unwrap_or_default();
+    skins.retain(|s| s.id != skin_id);
+    let data = serde_json::to_string_pretty(&skins).map_err(|e| e.to_string())?;
+    tokio::fs::write(&path, data).await.map_err(|e| e.to_string())
+}
+
+// ---- Playtime ----
+
+#[tauri::command]
+async fn update_playtime(profile_id: String, minutes: u64, state: State<'_, AppState>) -> Result<(), String> {
+    let mut profiles = state.profiles.lock().await;
+    if let Some(p) = profiles.iter_mut().find(|p| p.id == profile_id) {
+        p.total_playtime += minutes;
+        log::info!("[Playtime] {} += {} min (total: {} min)", p.name, minutes, p.total_playtime);
+    }
+    drop(profiles);
+    save_profiles_to_disk(&state).await
+}
+
 // ---- Update Check ----
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -1186,7 +1256,11 @@ pub fn run() {
             import_mrpack,
             export_mrpack,
             check_for_updates,
+            update_playtime,
             open_instance_folder,
+            get_skins,
+            save_skin,
+            remove_skin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

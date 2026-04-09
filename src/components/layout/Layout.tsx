@@ -11,8 +11,13 @@ function UpdateBanner() {
 
   if (!updateAvailable || dismissed) return null
 
-  const openDownload = () => {
-    window.open(updateAvailable.download_url, '_blank')
+  const openDownload = async () => {
+    try {
+      const { open } = await import('@tauri-apps/plugin-shell')
+      open(updateAvailable.download_url)
+    } catch {
+      window.open(updateAvailable.download_url, '_blank')
+    }
   }
 
   return (

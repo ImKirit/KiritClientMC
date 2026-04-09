@@ -25,6 +25,7 @@ public class KiritClientMod implements ClientModInitializer {
     private FriendsManager friendsManager;
     private FullbrightManager fullbrightManager;
     private ZoomManager zoomManager;
+    private MacroManager macroManager;
 
     private KeyBinding settingsKey;
     private KeyBinding waypointKey;
@@ -32,6 +33,7 @@ public class KiritClientMod implements ClientModInitializer {
     private KeyBinding toggleFullbrightKey;
     private KeyBinding zoomKey;
     private KeyBinding toggleCoordsKey;
+    private KeyBinding toggleCrosshairKey;
 
     public static KiritClientMod getInstance() {
         return instance;
@@ -62,6 +64,9 @@ public class KiritClientMod implements ClientModInitializer {
         try { zoomManager = new ZoomManager(); }
         catch (Throwable e) { LOGGER.warn("[KiritClient] ZoomManager failed: {}", e.getMessage()); }
 
+        try { macroManager = new MacroManager(); }
+        catch (Throwable e) { LOGGER.warn("[KiritClient] MacroManager failed: {}", e.getMessage()); }
+
         // Keybinds
         settingsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.kiritclient.settings", GLFW.GLFW_KEY_RIGHT_SHIFT, KeyBinding.Category.MISC));
@@ -80,6 +85,9 @@ public class KiritClientMod implements ClientModInitializer {
 
         toggleCoordsKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
                 "key.kiritclient.coords", GLFW.GLFW_KEY_G, KeyBinding.Category.MISC));
+
+        toggleCrosshairKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.kiritclient.crosshair", GLFW.GLFW_KEY_V, KeyBinding.Category.MISC));
 
         // Tick handler
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -104,6 +112,11 @@ public class KiritClientMod implements ClientModInitializer {
                 config.save();
                 LOGGER.info("[KiritClient] Coords HUD: {}", config.coordsHudEnabled ? "ON" : "OFF");
             }
+            if (toggleCrosshairKey.wasPressed()) {
+                config.customCrosshairEnabled = !config.customCrosshairEnabled;
+                config.save();
+                LOGGER.info("[KiritClient] Custom Crosshair: {}", config.customCrosshairEnabled ? "ON" : "OFF");
+            }
 
             // Zoom: hold-to-zoom
             if (zoomManager != null && config.zoomEnabled) {
@@ -117,9 +130,10 @@ public class KiritClientMod implements ClientModInitializer {
 
             // Tick features
             if (fullbrightManager != null) fullbrightManager.tick(client);
+            if (macroManager != null) macroManager.tick(client);
         });
 
-        LOGGER.info("[KiritClient] Loaded! RIGHT_SHIFT=Settings, K=Fullbright, C=Zoom, G=Coords");
+        LOGGER.info("[KiritClient] Loaded! RIGHT_SHIFT=Settings, K=Fullbright, C=Zoom, G=Coords, V=Crosshair");
     }
 
     public KiritConfig getConfig() { return config; }
@@ -129,4 +143,5 @@ public class KiritClientMod implements ClientModInitializer {
     public FriendsManager getFriendsManager() { return friendsManager; }
     public FullbrightManager getFullbrightManager() { return fullbrightManager; }
     public ZoomManager getZoomManager() { return zoomManager; }
+    public MacroManager getMacroManager() { return macroManager; }
 }

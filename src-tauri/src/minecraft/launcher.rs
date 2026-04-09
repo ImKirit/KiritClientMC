@@ -93,7 +93,7 @@ pub fn build_jvm_arguments(version: &VersionJson, config: &LaunchConfig, classpa
     let vars: HashMap<&str, String> = HashMap::from([
         ("natives_directory", config.natives_dir.to_string_lossy().to_string()),
         ("launcher_name", "KiritClient".to_string()),
-        ("launcher_version", "0.1.0".to_string()),
+        ("launcher_version", "0.1.2".to_string()),
         ("classpath", classpath.to_string()),
     ]);
 
@@ -222,9 +222,11 @@ pub async fn launch_minecraft(
 
     let pid = child.id().unwrap_or(0);
 
-    // Spawn task to read output and forward errors to frontend
+    // Spawn task to read output, forward errors, and track playtime
+    let start_time = std::time::Instant::now();
     tokio::spawn(async move {
         let output = child.wait_with_output().await;
+        let elapsed_minutes = start_time.elapsed().as_secs() / 60;
         match output {
             Ok(o) => {
                 let stderr = String::from_utf8_lossy(&o.stderr).to_string();
@@ -247,6 +249,12 @@ pub async fn launch_minecraft(
                     }
                 } else {
                     log::info!("Minecraft exited normally");
+                }
+                // Emit playtime event regardless of exit status (user still played)
+                if let Some(ref app) = app {
+                    use tauri::Emitter;
+                    app.emit("game:exited", elapsed_minutes).ok();
+                    log::info!("Game session: {} minutes", elapsed_minutes);
                 }
             },
             Err(e) => log::error!("Failed to wait for Minecraft: {}", e),

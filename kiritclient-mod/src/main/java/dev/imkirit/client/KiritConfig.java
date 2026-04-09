@@ -44,6 +44,23 @@ public class KiritConfig {
     // Coordinates HUD
     public boolean coordsHudEnabled = false;
 
+    // Macros (key → command)
+    public boolean macrosEnabled = true;
+    public java.util.List<MacroEntry> macros = new java.util.ArrayList<>();
+
+    public static class MacroEntry {
+        public String name = "";
+        public String command = "";
+        public int keyCode = -1; // GLFW key code
+
+        public MacroEntry() {}
+        public MacroEntry(String name, String command, int keyCode) {
+            this.name = name;
+            this.command = command;
+            this.keyCode = keyCode;
+        }
+    }
+
     // Custom Crosshair
     public boolean customCrosshairEnabled = false;
     public String crosshairType = "plus"; // plus, dot, circle

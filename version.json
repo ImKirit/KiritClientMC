@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.1.2",
   "download_url": "https://imkirit.dev/mcclient",
-  "changelog": "Open Folder, Import Fix, Fullbright, Hitboxen, Zoom, Coords HUD"
+  "changelog": "Open Folder, Import Fix, Fullbright, Hitboxen, Zoom, Coords HUD, Playtime Tracking, Skin Persistence"
 }

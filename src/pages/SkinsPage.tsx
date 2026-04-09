@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Upload, Check, Trash2 } from 'lucide-react'
+import { invoke } from '@tauri-apps/api/core'
 import { useAuthStore } from '../stores/authStore'
 import { useI18n } from '../lib/i18n'
 import { SkinRenderer } from '../components/ui/SkinRenderer'
@@ -18,14 +19,29 @@ export function SkinsPage() {
   const [activeSkinId, setActiveSkinId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
 
-  const handleUpload = (file: File) => {
+  // Load persisted skins on mount
+  useEffect(() => {
+    invoke<SkinEntry[]>('get_skins').then(saved => {
+      if (saved.length > 0) {
+        setSkins(saved)
+      }
+    }).catch(e => console.error('Failed to load skins:', e))
+  }, [])
+
+  const handleUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) return
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const data = e.target?.result as string
       const name = file.name.replace(/\.[^.]+$/, '')
       const id = crypto.randomUUID()
-      setSkins(prev => [...prev, { id, name, data, slim: false }])
+      const skin: SkinEntry = { id, name, data, slim: false }
+      setSkins(prev => [...prev, skin])
+      try {
+        await invoke('save_skin', { skin })
+      } catch (e) {
+        console.error('Failed to save skin:', e)
+      }
     }
     reader.readAsDataURL(file)
   }
@@ -52,9 +68,27 @@ export function SkinsPage() {
     setActiveSkinId(id)
   }
 
-  const removeSkin = (id: string) => {
+  const removeSkin = async (id: string) => {
     setSkins(prev => prev.filter(s => s.id !== id))
     if (activeSkinId === id) setActiveSkinId(null)
+    try {
+      await invoke('remove_skin', { skinId: id })
+    } catch (e) {
+      console.error('Failed to remove skin:', e)
+    }
+  }
+
+  const toggleSlim = async (id: string) => {
+    const updated = skins.map(s => s.id === id ? { ...s, slim: !s.slim } : s)
+    setSkins(updated)
+    const skin = updated.find(s => s.id === id)
+    if (skin) {
+      try {
+        await invoke('save_skin', { skin })
+      } catch (e) {
+        console.error('Failed to update skin:', e)
+      }
+    }
   }
 
   const activeSkin = skins.find(s => s.id === activeSkinId)
@@ -89,7 +123,34 @@ export function SkinsPage() {
 
           {/* Skin List */}
           <div className="flex flex-col gap-3">
-            {skins.length === 0 ? (
+            {/* Current Mojang skin entry */}
+            {activeAccount && (
+              <div
+                className={`glass flex items-center gap-4 p-4 cursor-pointer ${
+                  !activeSkinId ? 'border-white/[0.16]!' : ''
+                }`}
+                onClick={() => setActiveSkinId(null)}
+              >
+                <div className="w-[40px] h-[40px] rounded-lg overflow-hidden bg-white/[0.04] flex items-center justify-center">
+                  <img
+                    src={`https://crafatar.com/avatars/${activeAccount.uuid}?size=40&overlay`}
+                    alt={activeAccount.username}
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-medium truncate">{activeAccount.username}</p>
+                  <p className="text-[11px] text-[var(--text-3)]">{t('skins.currentSkin')}</p>
+                </div>
+                {!activeSkinId && (
+                  <span className="text-[11px] px-2.5 py-1 rounded-full bg-white/[0.08] text-[var(--text-2)]">
+                    {t('skins.equipped')}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {skins.length === 0 && !activeAccount ? (
               <div className="glass p-6 text-center">
                 <p className="text-[13px] text-[var(--text-3)]">{t('skins.noSkins')}</p>
               </div>
@@ -122,7 +183,7 @@ export function SkinsPage() {
                     )}
                     <button
                       className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
-                      onClick={(e) => { e.stopPropagation(); setSkins(prev => prev.map(s => s.id === skin.id ? { ...s, slim: !s.slim } : s)) }}
+                      onClick={(e) => { e.stopPropagation(); toggleSlim(skin.id) }}
                       title="Toggle slim/classic"
                     >
                       <span className="text-[11px] text-[var(--text-3)]">{skin.slim ? t('skins.slim') : t('skins.classic')}</span>
@@ -165,6 +226,7 @@ export function SkinsPage() {
                   className="h-[200px]"
                   style={{ imageRendering: 'pixelated' }}
                 />
+                <p className="text-[13px] font-medium">{activeAccount.username}</p>
                 <p className="text-[12px] text-[var(--text-3)]">{t('skins.currentSkin')}</p>
               </div>
             ) : (

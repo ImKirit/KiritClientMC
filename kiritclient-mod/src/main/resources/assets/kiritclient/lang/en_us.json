@@ -6,5 +6,6 @@
   "key.kiritclient.hitbox": "Toggle Hitboxes",
   "key.kiritclient.fullbright": "Toggle Fullbright",
   "key.kiritclient.zoom": "Zoom",
-  "key.kiritclient.coords": "Toggle Coords HUD"
+  "key.kiritclient.coords": "Toggle Coords HUD",
+  "key.kiritclient.crosshair": "Toggle Custom Crosshair"
 }
