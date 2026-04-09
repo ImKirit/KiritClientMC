@@ -98,6 +98,7 @@ export function AccountsPage() {
   }
 
   const openLink = async (url: string) => {
+    if (!url.startsWith('https://')) return
     try {
       const { open } = await import('@tauri-apps/plugin-shell')
       open(url)

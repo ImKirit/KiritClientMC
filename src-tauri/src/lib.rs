@@ -823,13 +823,28 @@ async fn import_mrpack(file_path: String, state: State<'_, AppState>) -> Result<
             continue;
         };
 
-        if relative.is_empty() || entry.is_dir() {
+        // Path traversal protection: reject paths with ".." or absolute components
+        if relative.is_empty() || relative.contains("..") || std::path::Path::new(relative).is_absolute() {
+            if entry.is_dir() {
+                let dir_path = instance_dir.join(relative);
+                if dir_path.starts_with(&instance_dir) {
+                    std::fs::create_dir_all(&dir_path).ok();
+                }
+            }
+            continue;
+        }
+
+        if entry.is_dir() {
             let dir_path = instance_dir.join(relative);
             std::fs::create_dir_all(&dir_path).ok();
             continue;
         }
 
         let out_path = instance_dir.join(relative);
+        if !out_path.starts_with(&instance_dir) {
+            log::warn!("[Import] Skipping path traversal attempt: {}", relative);
+            continue;
+        }
         if let Some(parent) = out_path.parent() {
             std::fs::create_dir_all(parent).ok();
         }

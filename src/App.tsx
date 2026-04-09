@@ -19,9 +19,9 @@ function App() {
   const loadSettings = useSettingsStore(s => s.loadSettings)
 
   useEffect(() => {
-    loadAccounts().catch(() => {})
-    loadProfiles().catch(() => {})
-    loadSettings().catch(() => {})
+    loadAccounts().catch(e => console.error('Failed to load accounts:', e))
+    loadProfiles().catch(e => console.error('Failed to load profiles:', e))
+    loadSettings().catch(e => console.error('Failed to load settings:', e))
   }, [])
 
   return (
